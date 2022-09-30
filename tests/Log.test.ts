@@ -24,18 +24,18 @@ describe('Log setup', () => {
         expect(Log).toBeDefined()
     })
     test('Default print threshold is INFO (1)', () => {
-        expect(Log.getPrintThreshold()).toStrictEqual(1)
+        expect(Log.getPrintThreshold()).toStrictEqual("INFO")
     })
     test('Setting default print threshold', () => {
         Log.setPrintThreshold('DEBUG')
-        expect(Log.getPrintThreshold()).toStrictEqual(0)
+        expect(Log.getPrintThreshold()).toStrictEqual("DEBUG")
     })
     test('Setting and incorrect print threshold', () => {
         // @ts-ignore
         Log.setPrintThreshold('FOOBAR')
         expect(warn).toHaveBeenCalledTimes(1)
         warn.mockReset()
-        expect(Log.getPrintThreshold()).toStrictEqual(0)
+        expect(Log.getPrintThreshold()).toStrictEqual("DEBUG")
     })
 })
 

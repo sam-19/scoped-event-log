@@ -86,8 +86,13 @@ class Log {
     /**
      * Get current event printing threshold.
      */
-    static getPrintThreshold () {
-        return Log.printThreshold
+    static getPrintThreshold (): keyof typeof Log.LEVELS {
+        for (const [key, value] of Object.entries(Log.LEVELS)) {
+            if (value === Log.printThreshold) {
+                return key as keyof typeof Log.LEVELS
+            }
+        }
+        return "DISABLE"
     }
 
     /**
