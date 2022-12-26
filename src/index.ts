@@ -274,7 +274,7 @@ class Log {
      * @param level - Print messages at or above this level to console.
      */
     static setPrintThreshold (level: keyof typeof Log.LEVELS) {
-        if (Object.keys(Log.LEVELS).indexOf(level) !== -1 && level !== 'DISABLE') {
+        if (Object.keys(Log.LEVELS).indexOf(level) !== -1) {
             Log.printThreshold = Log.LEVELS[level]
         } else {
             console.warn(`Did not set invalid printing threshold ${level}`)

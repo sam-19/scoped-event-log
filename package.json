@@ -1,6 +1,6 @@
 {
   "name": "scoped-ts-log",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Global typescript log with scoped entries.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "build": "tsc",
+    "prepack": "npm run build",
     "test": "jest --runInBand"
   },
   "keywords": [
