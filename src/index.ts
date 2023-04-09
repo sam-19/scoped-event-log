@@ -142,7 +142,9 @@ class Log {
                 console.debug(
                     message.join(' ')
                     + '\n'
-                    + logEvent.extra.join('\n')
+                    + logEvent.extra.join
+                        ? logEvent.extra.join('\n')
+                        : logEvent.extra.toString()
                 )
             } else {
                 console.debug(message.join(' '))
@@ -154,7 +156,9 @@ class Log {
                 console.info(
                     message.join(' ')
                     + '\n'
-                    + logEvent.extra.join('\n')
+                    + logEvent.extra.join
+                        ? logEvent.extra.join('\n')
+                        : logEvent.extra.toString()
                 )
             } else {
                 console.info(message.join(' '))
@@ -165,7 +169,9 @@ class Log {
                 console.warn(
                     message.join(' ')
                     + '\n'
-                    + logEvent.extra.join('\n')
+                    + logEvent.extra.join
+                        ? logEvent.extra.join('\n')
+                        : logEvent.extra.toString()
                 )
             } else {
                 console.warn(message.join(' '))
@@ -176,7 +182,9 @@ class Log {
             console.error(
                 message.join(' ')
                 + '\n'
-                + logEvent.extra.join('\n')
+                + logEvent.extra.join
+                    ? logEvent.extra.join('\n')
+                    : logEvent.extra.toString()
             )
             } else {
                 console.error(message.join(' '))
