@@ -132,7 +132,9 @@ class Log {
             logEvent.time.toString(),
             typeof logEvent.message === 'string'
                 ? logEvent.message
-                : logEvent.message.join('\n')
+                : logEvent.message.join
+                    ? logEvent.message.join('\n')
+                    : logEvent.message.toString()
         )
         if (logEvent.level === Log.LEVELS.DEBUG) {
             message.unshift('DEBUG')
