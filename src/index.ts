@@ -68,8 +68,10 @@ class Log {
      * @param error - Optional Error object.
      */
     static error (message: string | string[], scope: string, error?: Error) {
-        // TODO: Examine the validity of building a stack trace with this approach
-        error = error || new Error()
+        // TODO: This sometimes gives unexpected results when the origin of the error is traced
+        //       back to this line. Alternative ways to find the call stack without throwing
+        //       an error?
+        error = error || new Error(error)
         let stack = (error.stack || '').split(/\r?\n/g)
         stack = stack.length > 1 ? stack.slice(1) : stack
         Log.add("ERROR", message, scope, stack)
