@@ -126,7 +126,7 @@ class Log {
      * @param logEvent - The event to print.
      */
     static print (logEvent: LogEvent) {
-        let message = []
+        const message = []
         if (logEvent.scope) {
             message.push(`[${logEvent.scope}]`)
         }
@@ -134,7 +134,7 @@ class Log {
             logEvent.time.toString(),
             typeof logEvent.message === 'string'
                 ? logEvent.message
-                : + Array.isArray(logEvent.message)
+                : logEvent.message.join
                     ? logEvent.message.join('\n')
                     : logEvent.message.toString()
         )
@@ -180,14 +180,16 @@ class Log {
             }
         } else if (logEvent.level === Log.LEVELS.ERROR) {
             message.unshift('ERROR')
+            console.log(message)
+            console.log(logEvent)
             if (logEvent.extra) {
-            console.error(
-                message.join(' ')
-                + '\n'
-                + Array.isArray(logEvent.extra)
-                    ? logEvent.extra.join('\n')
-                    : logEvent.extra.toString()
-            )
+                console.error(
+                    message.join(' ')
+                    + '\n'
+                    + Array.isArray(logEvent.extra)
+                        ? logEvent.extra.join('\n')
+                        : logEvent.extra.toString()
+                )
             } else {
                 console.error(message.join(' '))
             }
