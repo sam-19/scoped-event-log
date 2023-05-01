@@ -86,6 +86,36 @@ class Log {
     }
 
     /**
+     * Return all log events at the given level.
+     * @param level - Level of events to return.
+     * @returns LogEvent[]
+     */
+    static getAllEventsAtLevel (level: keyof typeof Log.LEVELS) {
+        const refLevel = Log.LEVELS[level]
+        return Log.events.filter(e => e.level === refLevel)
+    }
+
+    /**
+     * Return all log events at or above the given level.
+     * @param level - Minimum level of events to return.
+     * @returns LogEvent[]
+     */
+    static getAllEventsAtOrAboveLevel (level: keyof typeof Log.LEVELS) {
+        const refLevel = Log.LEVELS[level]
+        return Log.events.filter(e => e.level >= refLevel)
+    }
+
+    /**
+     * Return all log events at or below the given level.
+     * @param level - Maximum level of events to return.
+     * @returns LogEvent[]
+     */
+    static getAllEventsAtOrBelowLevel (level: keyof typeof Log.LEVELS) {
+        const refLevel = Log.LEVELS[level]
+        return Log.events.filter(e => e.level <= refLevel)
+    }
+
+    /**
      * Get current event printing threshold.
      */
     static getPrintThreshold (): keyof typeof Log.LEVELS {
