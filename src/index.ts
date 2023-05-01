@@ -180,19 +180,15 @@ class Log {
             }
         } else if (logEvent.level === Log.LEVELS.ERROR) {
             message.unshift('ERROR')
-            console.log(message)
-            console.log(logEvent)
+            const finalMessage = [message.join(' ')]
             if (logEvent.extra) {
-                console.error(
-                    message.join(' ')
-                    + '\n'
-                    + Array.isArray(logEvent.extra)
-                        ? logEvent.extra.join('\n')
-                        : logEvent.extra.toString()
-                )
-            } else {
-                console.error(message.join(' '))
+                if (Array.isArray(logEvent.extra)) {
+                    finalMessage.push(...logEvent.extra)
+                } else {
+                    finalMessage.push(logEvent.extra.toString())
+                }
             }
+            console.error(finalMessage.join('\n'))
         }
     }
 
