@@ -140,44 +140,38 @@ class Log {
         )
         if (logEvent.level === Log.LEVELS.DEBUG) {
             message.unshift('DEBUG')
+            const finalMessage = [message.join(' ')]
             if (logEvent.extra) {
-                console.debug(
-                    message.join(' ')
-                    + '\n'
-                    + Array.isArray(logEvent.extra)
-                        ? logEvent.extra.join('\n')
-                        : logEvent.extra.toString()
-                )
-            } else {
-                console.debug(message.join(' '))
+                if (Array.isArray(logEvent.extra)) {
+                    finalMessage.push(...logEvent.extra)
+                } else {
+                    finalMessage.push(logEvent.extra.toString())
+                }
             }
+            console.debug(finalMessage.join('\n'))
         } else if (logEvent.level === Log.LEVELS.INFO) {
             // Keep the first part of the message always the same length
             message.unshift('INFO ')
+            const finalMessage = [message.join(' ')]
             if (logEvent.extra) {
-                console.info(
-                    message.join(' ')
-                    + '\n'
-                    + Array.isArray(logEvent.extra)
-                        ? logEvent.extra.join('\n')
-                        : logEvent.extra.toString()
-                )
-            } else {
-                console.info(message.join(' '))
+                if (Array.isArray(logEvent.extra)) {
+                    finalMessage.push(...logEvent.extra)
+                } else {
+                    finalMessage.push(logEvent.extra.toString())
+                }
             }
+            console.info(finalMessage.join('\n'))
         } else if (logEvent.level === Log.LEVELS.WARN) {
             message.unshift('WARN ')
+            const finalMessage = [message.join(' ')]
             if (logEvent.extra) {
-                console.warn(
-                    message.join(' ')
-                    + '\n'
-                    + Array.isArray(logEvent.extra)
-                        ? logEvent.extra.join('\n')
-                        : logEvent.extra.toString()
-                )
-            } else {
-                console.warn(message.join(' '))
+                if (Array.isArray(logEvent.extra)) {
+                    finalMessage.push(...logEvent.extra)
+                } else {
+                    finalMessage.push(logEvent.extra.toString())
+                }
             }
+            console.warn(finalMessage.join('\n'))
         } else if (logEvent.level === Log.LEVELS.ERROR) {
             message.unshift('ERROR')
             const finalMessage = [message.join(' ')]
