@@ -71,14 +71,10 @@ class Log {
         // TODO: This sometimes gives unexpected results when the origin of the error is traced
         //       back to this line. Alternative ways to find the call stack without throwing
         //       an error?
-        try {
-            error = error || new Error(error)
-        } catch {
-        } finally {
-            let stack = (error?.stack || '').split(/\r?\n/g)
-            stack = stack.length > 1 ? stack.slice(1) : stack
-            Log.add("ERROR", message, scope, stack)
-        }
+        error = error || new Error(Array.isArray(message) ? message.join() : message)
+        let stack = (error.stack || '').split(/\r?\n/g)
+        stack = stack.length > 1 ? stack.slice(1) : stack
+        Log.add("ERROR", message, scope, stack)
     }
 
     /**
@@ -138,7 +134,7 @@ class Log {
             logEvent.time.toString(),
             typeof logEvent.message === 'string'
                 ? logEvent.message
-                : logEvent.message.join
+                : + Array.isArray(logEvent.message)
                     ? logEvent.message.join('\n')
                     : logEvent.message.toString()
         )
@@ -148,7 +144,7 @@ class Log {
                 console.debug(
                     message.join(' ')
                     + '\n'
-                    + logEvent.extra.join
+                    + Array.isArray(logEvent.extra)
                         ? logEvent.extra.join('\n')
                         : logEvent.extra.toString()
                 )
@@ -162,7 +158,7 @@ class Log {
                 console.info(
                     message.join(' ')
                     + '\n'
-                    + logEvent.extra.join
+                    + Array.isArray(logEvent.extra)
                         ? logEvent.extra.join('\n')
                         : logEvent.extra.toString()
                 )
@@ -175,7 +171,7 @@ class Log {
                 console.warn(
                     message.join(' ')
                     + '\n'
-                    + logEvent.extra.join
+                    + Array.isArray(logEvent.extra)
                         ? logEvent.extra.join('\n')
                         : logEvent.extra.toString()
                 )
@@ -188,7 +184,7 @@ class Log {
             console.error(
                 message.join(' ')
                 + '\n'
-                + logEvent.extra.join
+                + Array.isArray(logEvent.extra)
                     ? logEvent.extra.join('\n')
                     : logEvent.extra.toString()
             )
