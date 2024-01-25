@@ -1,7 +1,7 @@
 /**
  * Scoped TypeScript log.
  * @package    scoped-ts-log
- * @copyright  2022 Sampsa Lohi
+ * @copyright  2024 Sampsa Lohi
  * @license    MIT
  */
 
@@ -24,6 +24,13 @@ class Log {
     }
     /** Events at and above this level will be printed to console. */
     protected static printThreshold: number = 1
+    protected static workers: Worker[] = []
+
+    /**
+     * Keep messages in worker scope separate from the main thread. If set to false, logged messages will
+     * be relayed to the main thread for logging.
+     */
+    static separateWorkerScope = false
 
     /**
      * Add a new event to the log at the given level.
@@ -32,6 +39,17 @@ class Log {
      * @param scope - Scope of the event.
      */
     static add (level: keyof typeof Log.LEVELS, message: string | string[], scope: string, extra?: any) {
+        // Check if we are in worker scope.
+        if (typeof postMessage !== 'undefined' && !Log.separateWorkerScope) {
+            postMessage({
+                action: 'log',
+                level: level,
+                message: message,
+                scope: scope,
+                extra: extra,
+            })
+            return
+        }
         if (Object.keys(Log.LEVELS).indexOf(level) === -1 || level === 'DISABLE') {
             // Not a valid logging level
             console.warn(`Rejected an event with an invalid log level: (${level}) ${message}`)
@@ -217,6 +235,25 @@ class Log {
     }
 
     /**
+     * Register a worker that is using the Log to relay messages to the main thread.
+     * @param worker - The worker to listen to and update print threshold changes to.
+     */
+    static registerWorker (worker: Worker) {
+        const messageHandler = (message: MessageEvent) => {
+            const { data } = message
+            if (data.action === 'log' && data.level && data.message, data.scope) {
+                this.add(data.level, data.message, data.scope, data.extra)
+            } else if (data.action === 'terminate') {
+                // Removing the listener from a terminated worker is not necessary,
+                // but at least this gives a way to do that.
+                worker.removeEventListener('message', messageHandler)
+            }
+        }
+        // Listen to log messages from the worker.
+        worker.addEventListener('message', messageHandler)
+    }
+
+    /**
      * Remove all events _at_ the given priority `level` from the log.
      * @param level - Level at which events will be removed.
      */
@@ -310,6 +347,9 @@ class Log {
     static setPrintThreshold (level: keyof typeof Log.LEVELS) {
         if (Object.keys(Log.LEVELS).indexOf(level) !== -1) {
             Log.printThreshold = Log.LEVELS[level]
+            for (const worker of this.workers) {
+                worker.postMessage({ action: 'log-set-print-threshold', level: level })
+            }
         } else {
             console.warn(`Did not set invalid printing threshold ${level}`)
         }
