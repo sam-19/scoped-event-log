@@ -39,8 +39,11 @@ class Log {
      * @param scope - Scope of the event.
      */
     static add (level: keyof typeof Log.LEVELS, message: string | string[], scope: string, extra?: any) {
-        // Check if we are in worker scope.
-        if (typeof postMessage !== 'undefined' && !Log.separateWorkerScope) {
+        // @ts-ignore: Check if we are in worker scope.
+        if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope &&
+            typeof postMessage !== 'undefined' &&
+            !Log.separateWorkerScope
+        ) {
             postMessage({
                 action: 'log',
                 level: level,
