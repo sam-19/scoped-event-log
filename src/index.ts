@@ -5,7 +5,42 @@
  * @license    MIT
  */
 
-class Log {
+/**
+ * A log event listener method.
+ * @param level - Logging level of the event.
+ * @param event - The logging event itself.
+ */
+export type LogEventListener = (level?: LogLevel, event?: LogEvent) => unknown
+
+/** Valid log message priority level. */
+export type LogLevel = keyof typeof Log.LEVELS
+
+/**
+ * Log is a global scope object that can be used to store, examine and export messages and events.
+ *
+ * Events must be classified at one of the accepted priority levels (`DEBUG`, `INFO`, `WARN`, and `ERROR`).
+ * A special level `DISABLE` is not meant for event classification; it can be used as a threshold to prevent any log
+ * messages from being printed to the JavaScript console.
+ *
+ * Suggested classification scheme:
+ * - `DEBUG`: Lowest level events meant to track the normal operation of the application.
+ * - `INFO`: Used to notify that an important operation has completed, for example a module or resource finishes loading.
+ * - `WARN`: Used when an expected issue prevents the application from fully performing, but not altogether stopping, an operation.
+ * - `ERROR`: Used when an (usually) unexpected issue prevents the application from continuing an operation.
+ *
+ * Since the worker opertes in a different scope than the main document, the `Log` objects imported in workers are
+ * separate objects. Since we don't want to maintain multiple instances of the object, all with their individual event
+ * buffers, we can register a `worker` to automatically relay all events from its `Log` to the `Log` where it's
+ * registered (i.e. the main document).
+ * @example
+ * ```
+ * import { Log } from 'scoped-ts-log'
+ * const worker = new Worker()
+ * Log.registerWorker(worker)
+ * // Now all log messages from worker are relayed to Log
+ * ```
+ */
+export class Log {
     // Static properties
     /** Log event priority levels (in ascending order). */
     static readonly LEVELS = {
@@ -15,6 +50,17 @@ class Log {
         ERROR: 3,
         DISABLE: 4,
     }
+    /** List of log event listeners. */
+    protected static eventListeners: {
+        /** Event levels to listen to. */
+        levels: LogLevel[]
+        /** The listener method to call on matching events. */
+        listener: LogEventListener
+        /** Identifier for the owner of this listener. */
+        owner: string | null
+        /** Should this listener be called only a single time? */
+        single: boolean
+    }[] = []
     /** List of logged events. */
     protected static events: LogEvent[] = []
     protected static _prevTimestamp: number | null = null
@@ -51,9 +97,10 @@ class Log {
                 scope: scope,
                 extra: extra,
             })
+            // Message will be handled in the main document's Log.
             return
         }
-        if (Object.keys(Log.LEVELS).indexOf(level) === -1 || level === 'DISABLE') {
+        if (!Object.keys(Log.LEVELS).includes(level) || level === 'DISABLE') {
             // Not a valid logging level
             console.warn(`Rejected an event with an invalid log level: (${level}) ${message}`)
         } else {
@@ -63,6 +110,59 @@ class Log {
             }
             Log.events.push(logEvent)
             Log._prevTimestamp = logEvent.time.toTime()
+            Log.callEventListeners(level, logEvent)
+        }
+    }
+
+    /**
+     * Add a listener for events of each given logging `level`.
+     * @param level - Log level or array of levels to listen to.
+     * @param listener - Method to call when a listened event occurs.
+     * @param owner - Optional identifier for the owner of the listener (for mass removal of registered listeners).
+     * @param singleEvent - Only call once (on the next event) and then remove the listener (default false).
+     */
+    static addEventListener (
+        level: LogLevel | LogLevel[],
+        listener: LogEventListener,
+        owner?: string,
+        singleEvent = false
+    ) {
+        level = Array.isArray(level) ? level : [level] // Always store as an array.
+        for (const ext of Log.eventListeners) {
+            if (ext.listener === listener) {
+                // Only add possible new levels.
+                for (const lvl of level) {
+                    if (!ext.levels.includes(lvl)) {
+                        ext.levels.push(lvl)
+                    }
+                }
+                return
+            }
+        }
+        Log.eventListeners.push({
+            owner: owner || null,
+            levels: level,
+            listener: listener,
+            single: singleEvent,
+        })
+    }
+
+    /**
+     * Call all listeners for the given logging `level`.
+     * @param level - Log level of the event.
+     * @param event - The actual event.
+     */
+    protected static callEventListeners (level: LogLevel, event: LogEvent) {
+        for (let i=0; i<Log.eventListeners.length; i++) {
+            const evt = Log.eventListeners[i]
+            if (evt.levels.includes(level)) {
+                evt.listener(level, event)
+                // Remove event listener if it was only meant to be called once.
+                if (evt.single) {
+                    Log.eventListeners.splice(i, 1)
+                    i--
+                }
+            }
         }
     }
 
@@ -71,6 +171,15 @@ class Log {
      */
     static clear () {
         Log.events.splice(0)
+        // Send "clear" events to notify listeners that the log is empty.
+        const debugEvent = new LogEvent(0, '__clear', 'Log')
+        Log.callEventListeners("DEBUG", debugEvent)
+        const infoEvent = new LogEvent(1, '__clear', 'Log')
+        Log.callEventListeners("INFO", infoEvent)
+        const warnEvent = new LogEvent(2, '__clear', 'Log')
+        Log.callEventListeners("WARN", warnEvent)
+        const errorEvent = new LogEvent(3, '__clear', 'Log')
+        Log.callEventListeners("ERROR", errorEvent)
     }
 
     /**
@@ -99,6 +208,24 @@ class Log {
     }
 
     /**
+     * Export stored log events into JSON.
+     * @param level - Optional priority level to filter the events by, will return all events if left empty.
+     * @returns Event array as a JSON string.
+     */
+    static exportToJson (level?: LogLevel) {
+        const events = level !== undefined ? Log.getAllEventsAtLevel(level) : Log.events
+        const plainObjects = events.map(e => {
+            return {
+                level: e.level,
+                message: e.message,
+                scope: e.scope,
+                time: e.time.date.getTime(),
+            }
+        })
+        return JSON.stringify(plainObjects)
+    }
+
+    /**
      * Get all logged events.
      * @returns All logged events as an array of LogEvents.
      */
@@ -111,7 +238,7 @@ class Log {
      * @param level - Level of events to return.
      * @returns LogEvent[]
      */
-    static getAllEventsAtLevel (level: keyof typeof Log.LEVELS) {
+    static getAllEventsAtLevel (level: LogLevel) {
         const refLevel = Log.LEVELS[level]
         return Log.events.filter(e => e.level === refLevel)
     }
@@ -121,7 +248,7 @@ class Log {
      * @param level - Minimum level of events to return.
      * @returns LogEvent[]
      */
-    static getAllEventsAtOrAboveLevel (level: keyof typeof Log.LEVELS) {
+    static getAllEventsAtOrAboveLevel (level: LogLevel) {
         const refLevel = Log.LEVELS[level]
         return Log.events.filter(e => e.level >= refLevel)
     }
@@ -131,7 +258,7 @@ class Log {
      * @param level - Maximum level of events to return.
      * @returns LogEvent[]
      */
-    static getAllEventsAtOrBelowLevel (level: keyof typeof Log.LEVELS) {
+    static getAllEventsAtOrBelowLevel (level: LogLevel) {
         const refLevel = Log.LEVELS[level]
         return Log.events.filter(e => e.level <= refLevel)
     }
@@ -139,10 +266,10 @@ class Log {
     /**
      * Get current event printing threshold.
      */
-    static getPrintThreshold (): keyof typeof Log.LEVELS {
-        for (const [key, value] of Object.entries(Log.LEVELS)) {
+    static getPrintThreshold (): LogLevel {
+        for (const [key, value] of Object.entries(Log.LEVELS) as [LogLevel, number][]) {
             if (value === Log.printThreshold) {
-                return key as keyof typeof Log.LEVELS
+                return key
             }
         }
         return "DISABLE"
@@ -247,8 +374,8 @@ class Log {
             if (data.action === 'log' && data.level && data.message, data.scope) {
                 this.add(data.level, data.message, data.scope, data.extra)
             } else if (data.action === 'terminate') {
-                // Removing the listener from a terminated worker is not necessary,
-                // but at least this gives a way to do that.
+                // Removing the listener from a terminated worker may not be necessary, but at least this gives a way
+                // to do that.
                 worker.removeEventListener('message', messageHandler)
             }
         }
@@ -257,11 +384,74 @@ class Log {
     }
 
     /**
+     * Remove all event listeners. If `owner` is given, only event listeners from that owner are removed, otherwise
+     * event listeners from all owners are removed (i.e. all event listeners).
+     * @param owner - Optional owner to remove listeners from.
+     * @returns Number of event listeners removed.
+     */
+    static removeAllEventListeners (owner?: string) {
+        if (!owner) {
+            return this.eventListeners.splice(0).reduce((partial, item) => partial + item.levels.length, 0)
+        }
+        let rmCount = 0
+        for (let i=0; i<this.eventListeners.length; i++) {
+            if (this.eventListeners[i].owner === owner) {
+                rmCount += this.eventListeners.splice(i, 1)[0].levels.length
+                i--
+            }
+        }
+        return rmCount
+    }
+
+    /**
+     * Remove a listener that matches the given `level` (or levels). A given `owner` name is also required to match,
+     * an empty owner will match listeners from named and unnammed owners.
+     * @param level - Level or array of levels to match.
+     * @param listener - The listener to remove.
+     * @param owner - Optional name of the owner to match.
+     * @returns The number of listeners that were removed.
+     */
+    static removeEventListeners (level: LogLevel | LogLevel[], listener: LogEventListener, owner?: string) {
+        level = Array.isArray(level) ? level : [level]
+        let rmCount = 0
+        for (let i=0; i<Log.eventListeners.length; i++) {
+            const evt = Log.eventListeners[i]
+            if (evt.levels.length === level.length && evt.levels.every(l => level.includes(l))) {
+                // Event listener levels match the given level(s), we can remove entire listener if a match.
+                if (evt.listener === listener && (!owner || evt.owner === owner)) {
+                    Log.eventListeners.splice(i, 1)
+                    i--
+                    rmCount++
+                }
+            } else {
+                // Go through each event level.
+                for (let j=0; j<evt.levels.length; j++) {
+                    if (
+                        level.includes(evt.levels[j]) &&
+                        evt.listener === listener && (!owner || evt.owner === owner)
+                    ) {
+                        evt.levels.splice(j, 1)
+                        j--
+                        rmCount++
+                    }
+                    // Remove entire listener if no levels are left.
+                    if (!evt.levels.length) {
+                        Log.eventListeners.splice(i, 1)
+                        i--
+                        break
+                    }
+                }
+            }
+        }
+        return rmCount
+    }
+
+    /**
      * Remove all events _at_ the given priority `level` from the log.
      * @param level - Level at which events will be removed.
      */
-    static removeEventsAtLevel (level: keyof typeof Log.LEVELS) {
-        if (Object.keys(Log.LEVELS).indexOf(level) === -1 || level === 'DISABLE') {
+    static removeEventsAtLevel (level: LogLevel) {
+        if (!Object.keys(Log.LEVELS).includes(level) || level === 'DISABLE') {
             // Not a valid logging level
             console.warn(`Cannot remove events at an invalid log level (${level}).`)
             return
@@ -278,8 +468,8 @@ class Log {
      * Remove all events _below_ the given priority `level` from the log.
      * @param level - Level below which events will be removed (events at the level will remain).
      */
-    static removeEventsBelowLevel (level: keyof typeof Log.LEVELS) {
-        if (Object.keys(Log.LEVELS).indexOf(level) === -1 || level === 'DISABLE') {
+    static removeEventsBelowLevel (level: LogLevel) {
+        if (!Object.keys(Log.LEVELS).includes(level) || level === 'DISABLE') {
             // Not a valid logging level
             console.warn(`Cannot remove events below an invalid log level (${level}).`)
             return
@@ -310,8 +500,8 @@ class Log {
      * @param scope - Scope of the events.
      * @param level - Level at which events will be removed.
      */
-    static removeScopeEventsAtLevel (scope: string, level: keyof typeof Log.LEVELS) {
-        if (Object.keys(Log.LEVELS).indexOf(level) === -1 || level === 'DISABLE') {
+    static removeScopeEventsAtLevel (scope: string, level: LogLevel) {
+        if (!Object.keys(Log.LEVELS).includes(level) || level === 'DISABLE') {
             // Not a valid logging level
             console.warn(`Cannot remove scope ${scope} events below an invalid log level (${level}).`)
             return
@@ -322,6 +512,8 @@ class Log {
                 i--
             }
         }
+        const clearEvent = new LogEvent(Log.LEVELS[level], '__clear', 'Log')
+        Log.callEventListeners(level, clearEvent)
     }
 
     /**
@@ -329,8 +521,8 @@ class Log {
      * @param scope - Scope of the events.
      * @param level - Level below which events will be removed (events at the level will remain).
      */
-    static removeScopeEventsBelowLevel (scope: string, level: keyof typeof Log.LEVELS) {
-        if (Object.keys(Log.LEVELS).indexOf(level) === -1 || level === 'DISABLE') {
+    static removeScopeEventsBelowLevel (scope: string, level: LogLevel) {
+        if (!Object.keys(Log.LEVELS).includes(level) || level === 'DISABLE') {
             // Not a valid logging level
             console.warn(`Cannot remove scope ${scope} events below an invalid log level (${level}).`)
             return
@@ -341,14 +533,20 @@ class Log {
                 i--
             }
         }
+        for (const [name, lvl] of Object.entries(Log.LEVELS) as [LogLevel, number][]) {
+            if (lvl < Log.LEVELS[level]) {
+                const clearEvent = new LogEvent(lvl, '__clear', 'Log')
+                Log.callEventListeners(name, clearEvent)
+            }
+        }
     }
 
     /**
      * Set a new printing threshold level.
      * @param level - Print messages at or above this level to console.
      */
-    static setPrintThreshold (level: keyof typeof Log.LEVELS) {
-        if (Object.keys(Log.LEVELS).indexOf(level) !== -1) {
+    static setPrintThreshold (level: LogLevel) {
+        if (Object.keys(Log.LEVELS).includes(level)) {
             Log.printThreshold = Log.LEVELS[level]
             for (const worker of this.workers) {
                 worker.postMessage({ action: 'log-set-print-threshold', level: level })
@@ -470,4 +668,3 @@ class LogTimestamp {
 }
 
 export default Log
-export { Log }

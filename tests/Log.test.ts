@@ -111,3 +111,67 @@ describe('Logging events', () => {
         expect(Log.getScopeEvents('Test add').length).toStrictEqual(0)
     })
 })
+describe("Event listeners", () => {
+    let eventCount = 0
+    const listener = () => {
+        eventCount++
+    }
+    test('Add single event listener', () => {
+        Log.addEventListener("DEBUG", listener, "test")
+        Log.debug("Test debug listener.", "Test listeners")
+        expect(eventCount).toStrictEqual(1)
+    })
+    test('Remove event listener', () => {
+        const rmCount = Log.removeEventListeners("DEBUG", listener)
+        expect(rmCount).toStrictEqual(1)
+        Log.debug("Test removed debug listener.", "Test listeners")
+        expect(eventCount).toStrictEqual(1)
+    })
+    test('Multiple events listener', () => {
+        eventCount = 0
+        Log.addEventListener(["DEBUG", "INFO", "WARN"], listener, "test")
+        Log.debug("Test multiple listener.", "Test listeners")
+        expect(eventCount).toStrictEqual(1)
+        const rmCount = Log.removeEventListeners(["DEBUG", "INFO"], listener)
+        expect(rmCount).toStrictEqual(2)
+        Log.debug("Test removed multiple listener.", "Test listeners")
+        expect(eventCount).toStrictEqual(1)
+        Log.warn("Test remaining multiple listener.", "Test listeners")
+        expect(eventCount).toStrictEqual(2)
+    })
+    test('Remove all listeners', () => {
+        eventCount = 0
+        const antiListener = () => {
+            eventCount--
+        }
+        Log.addEventListener(["DEBUG", "WARN"], antiListener, "remove")
+        const rmAllForCount = Log.removeAllEventListeners("test")
+        expect(rmAllForCount).toStrictEqual(1)
+        Log.warn("Test remove all.", "Test removal")
+        expect(eventCount).toStrictEqual(-1)
+        const rmAllCount = Log.removeAllEventListeners()
+        expect(rmAllCount).toStrictEqual(2)
+        Log.warn("Test remove all again.", "Test removal")
+        expect(eventCount).toStrictEqual(-1)
+    })
+})
+describe("JSON export", () => {
+    test('Export events to JSON', () => {
+        Log.clear()
+        Log.debug("Export debug", "Test export")
+        Log.info("Export info", "Test export")
+        Log.warn("Export warn", "Test export")
+        Log.error("Export error", "Test export")
+        const jsonInfo = Log.exportToJson("INFO")
+        const jsInfo = JSON.parse(jsonInfo)
+        expect(Array.isArray(jsInfo)).toStrictEqual(true)
+        expect(jsInfo.length).toStrictEqual(1)
+        expect(jsInfo[0].level).toStrictEqual(1)
+        const jsonAll = Log.exportToJson()
+        const jsAll = JSON.parse(jsonAll)
+        expect(jsAll.length).toStrictEqual(4)
+        for (let i=0; i<jsAll.length; i++) {
+            expect(jsAll[i].level).toStrictEqual(i)
+        }
+    })
+})
