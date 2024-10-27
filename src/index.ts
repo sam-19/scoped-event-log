@@ -1,6 +1,6 @@
 /**
- * Scoped TypeScript log.
- * @package    scoped-ts-log
+ * Scoped event log.
+ * @package    scoped-event-log
  * @copyright  2024 Sampsa Lohi
  * @license    MIT
  */
@@ -34,7 +34,7 @@ export type LogLevel = keyof typeof Log.LEVELS
  * registered (i.e. the main document).
  * @example
  * ```
- * import { Log } from 'scoped-ts-log'
+ * import { Log } from 'scoped-event-log'
  * const worker = new Worker()
  * Log.registerWorker(worker)
  * // Now all log messages from worker are relayed to Log
@@ -84,8 +84,8 @@ export class Log {
      * @param message - Message as a string or array of strings (where each item is its own line).
      * @param scope - Scope of the event.
      */
-    static add (level: keyof typeof Log.LEVELS, message: string | string[], scope: string, extra?: any) {
-        // @ts-ignore: Check if we are in worker scope.
+    static add (level: keyof typeof Log.LEVELS, message: string | string[], scope: string, extra?: unknown) {
+        // @ts-expect-error: Check if we are in worker scope.
         if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope &&
             typeof postMessage !== 'undefined' &&
             !Log.separateWorkerScope
@@ -573,7 +573,7 @@ export class Log {
  */
 class LogEvent {
     /** Any extra properties. */
-    protected _extra: any
+    protected _extra: unknown
     /** Event priority level. */
     protected _level: number
     /** Message lines as a string or an array of strings. */
@@ -585,7 +585,7 @@ class LogEvent {
     /** Timestamp of logging the event. */
     protected _time: LogTimestamp
 
-    constructor (level: number, message: string | string[], scope: string, extra?: any) {
+    constructor (level: number, message: string | string[], scope: string, extra?: unknown) {
         this._extra = extra
         this._level = level
         this._message = message

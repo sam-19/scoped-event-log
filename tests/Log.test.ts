@@ -1,6 +1,6 @@
 /**
- * Scoped TypeScript log tests.
- * @package    scoped-ts-log
+ * Scoped event log tests.
+ * @package    scoped-event-log
  * @copyright  2022 Sampsa Lohi
  * @license    MIT
  */

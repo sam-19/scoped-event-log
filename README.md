@@ -1,4 +1,4 @@
-# scoped-ts-log
+# scoped-event-log
 
 Scoped TypeScript Log provides a typed logging utility for JavaScript/TypeScript projects. All events logged by the utility require a named scope, which can be used to filter and remove events.
 
@@ -6,12 +6,12 @@ Scoped TypeScript Log provides a typed logging utility for JavaScript/TypeScript
 
 ### Install via NPM
 ```shell
-npm i -S scoped-ts-log
+npm i -S scoped-event-log
 ```
 
 ### Import in JavaScript
 ```javascript
-import { Log } from 'scoped-ts-log'
+import { Log } from 'scoped-event-log'
 Log.add("DEBUG", "This is a logged debug event.", "scope")
 // Or using a shorthand:
 Log.debug("This is a logged debug event.", "scope")
@@ -43,7 +43,7 @@ buffers, we can register a `worker` to automatically relay all events from its `
 registered (i.e. the main document).
 
 ```javascript
-import { Log } from 'scoped-ts-log'
+import { Log } from 'scoped-event-log'
 const worker = new Worker()
 Log.registerWorker(worker)
 // Now all Log messages from worker are relayed to local Log.
