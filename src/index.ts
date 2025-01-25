@@ -106,7 +106,7 @@ export class Log {
         } else {
             const logEvent = new LogEvent(Log.LEVELS[level], message, scope, extra)
             if (Log.LEVELS[level] >= Log.printThreshold) {
-                this.print(logEvent)
+                Log.print(logEvent)
             }
             Log.events.push(logEvent)
             Log._prevTimestamp = logEvent.time.toTime()
@@ -372,7 +372,7 @@ export class Log {
         const messageHandler = (message: MessageEvent) => {
             const { data } = message
             if (data.action === 'log' && data.level && data.message, data.scope) {
-                this.add(data.level, data.message, data.scope, data.extra)
+                Log.add(data.level, data.message, data.scope, data.extra)
             } else if (data.action === 'terminate') {
                 // Removing the listener from a terminated worker may not be necessary, but at least this gives a way
                 // to do that.
@@ -391,12 +391,12 @@ export class Log {
      */
     static removeAllEventListeners (owner?: string) {
         if (!owner) {
-            return this.eventListeners.splice(0).reduce((partial, item) => partial + item.levels.length, 0)
+            return Log.eventListeners.splice(0).reduce((partial, item) => partial + item.levels.length, 0)
         }
         let rmCount = 0
-        for (let i=0; i<this.eventListeners.length; i++) {
-            if (this.eventListeners[i].owner === owner) {
-                rmCount += this.eventListeners.splice(i, 1)[0].levels.length
+        for (let i=0; i<Log.eventListeners.length; i++) {
+            if (Log.eventListeners[i].owner === owner) {
+                rmCount += Log.eventListeners.splice(i, 1)[0].levels.length
                 i--
             }
         }
@@ -548,7 +548,7 @@ export class Log {
     static setPrintThreshold (level: LogLevel) {
         if (Object.keys(Log.LEVELS).includes(level)) {
             Log.printThreshold = Log.LEVELS[level]
-            for (const worker of this.workers) {
+            for (const worker of Log.workers) {
                 worker.postMessage({ action: 'log-set-print-threshold', level: level })
             }
         } else {
