@@ -38,11 +38,74 @@
     },
     {
       "kind": "javascript-module",
+      "path": "src/index.ts",
+      "declarations": [],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "Log",
+          "declaration": {
+            "name": "Log",
+            "module": "src/index.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "LogInspector",
+          "declaration": {
+            "name": "LogInspector",
+            "module": "src/index.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "LogLevel",
+          "declaration": {
+            "name": "LogLevel",
+            "module": "src/index.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "LogEventListener",
+          "declaration": {
+            "name": "LogEventListener",
+            "module": "src/index.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "LogEventProps",
+          "declaration": {
+            "name": "LogEventProps",
+            "module": "src/index.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "LogEventTimestamp",
+          "declaration": {
+            "name": "LogEventTimestamp",
+            "module": "src/index.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "Log",
+            "module": "src/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
       "path": "src/Log.ts",
       "declarations": [
         {
           "kind": "class",
-          "description": "Log is a global scope object that can be used to store, examine and export messages and events.\n\nEvents must be classified at one of the accepted priority levels (`DEBUG`, `INFO`, `WARN`, and `ERROR`).\nA special level `DISABLE` is not meant for event classification; it can be used as a threshold to prevent any log\nmessages from being printed to the JavaScript console.\n\nSuggested classification scheme:\n- `DEBUG`: Lowest level events meant to track the normal operation of the application.\n- `INFO`: Used to notify that an important operation has completed, for example a module or resource finishes loading.\n- `WARN`: Used when an expected issue prevents the application from fully performing, but not altogether stopping, an operation.\n- `ERROR`: Used when an (usually) unexpected issue prevents the application from continuing an operation.\n\nSince the worker opertes in a different scope than the main document, the `Log` objects imported in workers are\nseparate objects. Since we don't want to maintain multiple instances of the object, all with their individual event\nbuffers, we can register a `worker` to automatically relay all events from its `Log` to the `Log` where it's\nregistered (i.e. the main document).",
+          "description": "Log is a global scope object that can be used to store, examine and export messages and events.\r\n\r\nEvents must be classified at one of the accepted priority levels (`DEBUG`, `INFO`, `WARN`, and `ERROR`).\r\nA special level `DISABLE` is not meant for event classification; it can be used as a threshold to prevent any log\r\nmessages from being printed to the JavaScript console.\r\n\r\nSuggested classification scheme:\r\n- `DEBUG`: Lowest level events meant to track the normal operation of the application.\r\n- `INFO`: Used to notify that an important operation has completed, for example a module or resource finishes loading.\r\n- `WARN`: Used when an expected issue prevents the application from fully performing, but not altogether stopping, an operation.\r\n- `ERROR`: Used when an (usually) unexpected issue prevents the application from continuing an operation.\r\n\r\nSince the worker opertes in a different scope than the main document, the `Log` objects imported in workers are\r\nseparate objects. Since we don't want to maintain multiple instances of the object, all with their individual event\r\nbuffers, we can register a `worker` to automatically relay all events from its `Log` to the `Log` where it's\r\nregistered (i.e. the main document).",
           "name": "Log",
           "members": [
             {
@@ -60,7 +123,7 @@
               "kind": "field",
               "name": "eventListeners",
               "type": {
-                "text": "{\n        /** Event levels to listen to. */\n        levels: LogLevel[]\n        /** The listener method to call on matching events. */\n        listener: LogEventListener\n        /** Identifier for the owner of this listener. */\n        owner: string | null\n        /** Should this listener be called only a single time? */\n        single: boolean\n    }[]"
+                "text": "{\r\n        /** Event levels to listen to. */\r\n        levels: LogLevel[]\r\n        /** The listener method to call on matching events. */\r\n        listener: LogEventListener\r\n        /** Identifier for the owner of this listener. */\r\n        owner: string | null\r\n        /** Should this listener be called only a single time? */\r\n        single: boolean\r\n    }[]"
               },
               "privacy": "protected",
               "static": true,
@@ -87,7 +150,7 @@
               "privacy": "public",
               "static": true,
               "default": "1000",
-              "description": "Maximum number of events to keep in memory.\nIf the number of events exceeds this, the oldest events are removed.\n\nSetting this to 0 will keep all events in memory."
+              "description": "Maximum number of events to keep in memory.\r\nIf the number of events exceeds this, the oldest events are removed.\r\n\r\nSetting this to 0 will keep all events in memory."
             },
             {
               "kind": "field",
@@ -135,7 +198,7 @@
               },
               "static": true,
               "default": "false",
-              "description": "Keep messages in worker scope separate from the main thread. If set to false, logged messages will\nbe relayed to the main thread for logging."
+              "description": "Keep messages in worker scope separate from the main thread. If set to false, logged messages will\r\nbe relayed to the main thread for logging."
             },
             {
               "kind": "method",
@@ -478,7 +541,7 @@
                   "description": "Optional owner to remove listeners from."
                 }
               ],
-              "description": "Remove all event listeners. If `owner` is given, only event listeners from that owner are removed, otherwise\nevent listeners from all owners are removed (i.e. all event listeners).",
+              "description": "Remove all event listeners. If `owner` is given, only event listeners from that owner are removed, otherwise\r\nevent listeners from all owners are removed (i.e. all event listeners).",
               "return": {
                 "type": {
                   "text": ""
@@ -513,7 +576,7 @@
                   "description": "Optional name of the owner to match."
                 }
               ],
-              "description": "Remove a listener that matches the given `level` (or levels). A given `owner` name is also required to match,\nan empty owner will match listeners from named and unnammed owners.",
+              "description": "Remove a listener that matches the given `level` (or levels). A given `owner` name is also required to match,\r\nan empty owner will match listeners from named and unnammed owners.",
               "return": {
                 "type": {
                   "text": ""
@@ -674,7 +737,7 @@
       "declarations": [
         {
           "kind": "class",
-          "description": "Log inspector element.\nThis component is used to display log events in a list format.\nIt allows filtering by priority and source, and supports pagination.",
+          "description": "Log inspector element.\r\nThis component is used to display log events in a list format.\r\nIt allows filtering by priority and source, and supports pagination.",
           "name": "LogInspector",
           "members": [
             {
@@ -685,7 +748,7 @@
                 "text": "1 | -1"
               },
               "default": "1",
-              "description": "Ordering if log events.\n- 1 is oldest to newest.\n- -1 is newest to oldest."
+              "description": "Ordering if log events.\r\n- 1 is oldest to newest.\r\n- -1 is newest to oldest."
             },
             {
               "kind": "field",
@@ -739,7 +802,7 @@
                 "text": "boolean"
               },
               "default": "false",
-              "description": "Is the app in production mode?\n- `development-mode` as an attribute.\n- `developmentMode` as a property."
+              "description": "Is the app in production mode?\r\n- `development-mode` as an attribute.\r\n- `developmentMode` as a property."
             },
             {
               "kind": "field",
@@ -748,7 +811,7 @@
                 "text": "number[]"
               },
               "default": "[]",
-              "description": "Displayed priority levels. Empty means all priorities.\n- `display-priorities` as an attribute.\n- `displayPriorities` as a property."
+              "description": "Displayed priority levels. Empty means all priorities.\r\n- `display-priorities` as an attribute.\r\n- `displayPriorities` as a property."
             },
             {
               "kind": "field",
@@ -757,7 +820,7 @@
                 "text": "string[]"
               },
               "default": "[]",
-              "description": "Displaued sources. Empty means all sources are displayed.\n- `display-sources` as an attribute.\n- `displaySources` as a property."
+              "description": "Displayed sources. Empty means all sources are displayed.\r\n- `display-sources` as an attribute.\r\n- `displaySources` as a property."
             },
             {
               "kind": "field",
@@ -766,7 +829,7 @@
                 "text": "number"
               },
               "default": "25",
-              "description": "The number of events to show per page.\n- `events-per-page` as an attribute.\n- `eventsPerPage` as a property."
+              "description": "The number of events to show per page.\r\n- `events-per-page` as an attribute.\r\n- `eventsPerPage` as a property."
             },
             {
               "kind": "field",
@@ -775,7 +838,7 @@
                 "text": "typeof Log"
               },
               "default": "Log",
-              "description": "The log instance to use.\n- `log` as an attribute.\n- `useLog` as a property."
+              "description": "The log instance to use.\r\n- `log` as an attribute.\r\n- `useLog` as a property."
             },
             {
               "kind": "field",
@@ -784,7 +847,7 @@
                 "text": "number"
               },
               "default": "1",
-              "description": "The current page number.\n- `page-number` as an attribute.\n- `pageNumber` as a property."
+              "description": "The current page number.\r\n- `page-number` as an attribute.\r\n- `pageNumber` as a property."
             },
             {
               "kind": "method",
@@ -950,66 +1013,9 @@
     },
     {
       "kind": "javascript-module",
-      "path": "src/index.ts",
+      "path": "umd/log/log.umd.js",
       "declarations": [],
-      "exports": [
-        {
-          "kind": "js",
-          "name": "Log",
-          "declaration": {
-            "name": "Log",
-            "module": "src/index.ts"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "LogInspector",
-          "declaration": {
-            "name": "LogInspector",
-            "module": "src/index.ts"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "LogLevel",
-          "declaration": {
-            "name": "LogLevel",
-            "module": "src/index.ts"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "LogEventListener",
-          "declaration": {
-            "name": "LogEventListener",
-            "module": "src/index.ts"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "LogEventProps",
-          "declaration": {
-            "name": "LogEventProps",
-            "module": "src/index.ts"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "LogEventTimestamp",
-          "declaration": {
-            "name": "LogEventTimestamp",
-            "module": "src/index.ts"
-          }
-        },
-        {
-          "kind": "js",
-          "name": "default",
-          "declaration": {
-            "name": "Log",
-            "module": "src/index.ts"
-          }
-        }
-      ]
+      "exports": []
     },
     {
       "kind": "javascript-module",
@@ -1022,7 +1028,7 @@
         {
           "kind": "variable",
           "name": "e",
-          "default": "new MutationObserver(Do)"
+          "default": "new MutationObserver(Ts)"
         },
         {
           "kind": "class",
@@ -1466,12 +1472,6 @@
           }
         }
       ]
-    },
-    {
-      "kind": "javascript-module",
-      "path": "umd/log/log.umd.js",
-      "declarations": [],
-      "exports": []
     }
   ]
 }

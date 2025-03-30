@@ -94,7 +94,7 @@ export class LogInspector extends LitElement {
   @property({ type: Array, attribute: 'display-priorities' })
   displayPriorities: number[] = []
   /**
-   * Displaued sources. Empty means all sources are displayed.
+   * Displayed sources. Empty means all sources are displayed.
    * - `display-sources` as an attribute.
    * - `displaySources` as a property.
    * @default [] (all sources)

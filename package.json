@@ -16,7 +16,7 @@
     "build": "tsc && npm run build:inspector && npm run build:log && npm run build:manifest",
     "build:inspector": "vite build --config vite.config.inspector.ts",
     "build:log": "vite build --config vite.config.log.ts",
-    "build:manifest": "node ./node_modules/@custom-elements-manifest/analyzer/cem.js analyze",
+    "build:manifest": "custom-elements-manifest analyze",
     "dev": "vite",
     "lint": "node node_modules/eslint/bin/eslint src",
     "prepack": "npm run build",
