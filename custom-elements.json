@@ -38,6 +38,18 @@
     },
     {
       "kind": "javascript-module",
+      "path": "dist/Log.js",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "dist/LogInspector.js",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
       "path": "src/index.ts",
       "declarations": [],
       "exports": [
@@ -1013,12 +1025,6 @@
     },
     {
       "kind": "javascript-module",
-      "path": "umd/log/log.umd.js",
-      "declarations": [],
-      "exports": []
-    },
-    {
-      "kind": "javascript-module",
       "path": "umd/inspector/inspector.umd.js",
       "declarations": [
         {
@@ -1472,6 +1478,12 @@
           }
         }
       ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "umd/log/log.umd.js",
+      "declarations": [],
+      "exports": []
     }
   ]
 }
