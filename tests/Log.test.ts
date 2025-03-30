@@ -6,7 +6,7 @@
  */
 
 import {describe, expect, test} from '@jest/globals'
-import Log from '../src'
+import { Log } from '../src/Log'
 
 // Avoid messages in the console during test
 console['debug'] = () => {}
@@ -173,5 +173,21 @@ describe("JSON export", () => {
         for (let i=0; i<jsAll.length; i++) {
             expect(jsAll[i].level).toStrictEqual(i)
         }
+    })
+})
+describe("Event limit", () => {
+    test("Remove older events if limit is reached", () => {
+        Log.clear()
+        Log.maxEvents = 5
+        Log.debug("Test debug", "Test limit")
+        Log.info("Test info", "Test limit")
+        Log.warn("Test warn", "Test limit")
+        Log.error("Test error", "Test limit")
+        Log.debug("Test 1", "Test limit")
+        Log.debug("Test 2", "Test exceed")
+        Log.debug("Test 3", "Test exceed")
+        expect(Log.getAllEvents().length).toStrictEqual(5)
+        expect(Log.getScopeEvents("Test limit").length).toStrictEqual(3)
+        expect(Log.getScopeEvents("Test exceed").length).toStrictEqual(2)
     })
 })

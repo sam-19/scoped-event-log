@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Log inspector</title>
+    <script type="module" src="/src/LogInspector.ts"></script>
+  </head>
+  <body>
+    <log-inspector development-mode>
+
+    </log-inspector>
+  </body>
+  <script type="module">
+    import { Log } from '/src'
+    let i = 0
+    const intv = setInterval(() => {
+      if (i === 93) {
+        Log.debug('This is a debug message', 'Default')
+      } else if (i === 94) {
+        Log.info('This is an info message', 'Default')
+      } else if (i === 95) {
+        Log.warn('This is a warning message', 'Default')
+      } else if (i === 96) {
+        Log.error('This is an error message', 'Default', new Error())
+      } else if (i === 97) {
+        Log.add('DEBUG', 'First test message', 'Test')
+      } else if (i === 98) {
+        Log.add('DEBUG', 'Second test message', 'Test', "Additional information")
+      } else if (i === 99) {
+        Log.add(
+          'DEBUG',
+          'A very, very long message text that should exceed the field width at least in narrower containers and only be displayed fully when the message is opened.',
+          'Very long scope identifier',
+          [
+            "First paragraph of additional info.",
+            "Second paragraph of additional info.",
+            "First line of third paragraph of additional info\nSecond line of third paragraph of additional info.",
+          ]
+        )
+      } else {
+        Log.add('INFO', `Test message #${i+1}.`, 'Rest')
+      }
+      i++
+      if (i > 99) {
+        clearInterval(intv)
+      }
+    }, 1)
+  </script>
+</html>

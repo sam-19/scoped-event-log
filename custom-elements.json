@@ -1,0 +1,987 @@
+{
+  "schemaVersion": "1.0.0",
+  "readme": "",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "src/Log.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "Log is a global scope object that can be used to store, examine and export messages and events.\n\nEvents must be classified at one of the accepted priority levels (`DEBUG`, `INFO`, `WARN`, and `ERROR`).\nA special level `DISABLE` is not meant for event classification; it can be used as a threshold to prevent any log\nmessages from being printed to the JavaScript console.\n\nSuggested classification scheme:\n- `DEBUG`: Lowest level events meant to track the normal operation of the application.\n- `INFO`: Used to notify that an important operation has completed, for example a module or resource finishes loading.\n- `WARN`: Used when an expected issue prevents the application from fully performing, but not altogether stopping, an operation.\n- `ERROR`: Used when an (usually) unexpected issue prevents the application from continuing an operation.\n\nSince the worker opertes in a different scope than the main document, the `Log` objects imported in workers are\nseparate objects. Since we don't want to maintain multiple instances of the object, all with their individual event\nbuffers, we can register a `worker` to automatically relay all events from its `Log` to the `Log` where it's\nregistered (i.e. the main document).",
+          "name": "Log",
+          "members": [
+            {
+              "kind": "field",
+              "name": "LEVELS",
+              "type": {
+                "text": "object"
+              },
+              "static": true,
+              "readonly": true,
+              "default": "{ DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3, DISABLE: 4, }",
+              "description": "Log event priority levels (in ascending order)."
+            },
+            {
+              "kind": "field",
+              "name": "eventListeners",
+              "type": {
+                "text": "{\n        /** Event levels to listen to. */\n        levels: LogLevel[]\n        /** The listener method to call on matching events. */\n        listener: LogEventListener\n        /** Identifier for the owner of this listener. */\n        owner: string | null\n        /** Should this listener be called only a single time? */\n        single: boolean\n    }[]"
+              },
+              "privacy": "protected",
+              "static": true,
+              "default": "[]",
+              "description": "List of log event listeners."
+            },
+            {
+              "kind": "field",
+              "name": "events",
+              "type": {
+                "text": "LogEvent[]"
+              },
+              "privacy": "protected",
+              "static": true,
+              "default": "[]",
+              "description": "List of logged events."
+            },
+            {
+              "kind": "field",
+              "name": "maxEvents",
+              "type": {
+                "text": "number"
+              },
+              "privacy": "public",
+              "static": true,
+              "default": "1000",
+              "description": "Maximum number of events to keep in memory.\nIf the number of events exceeds this, the oldest events are removed.\n\nSetting this to 0 will keep all events in memory."
+            },
+            {
+              "kind": "field",
+              "name": "_prevTimestamp",
+              "type": {
+                "text": "number | null"
+              },
+              "privacy": "protected",
+              "static": true,
+              "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "prevTimestamp",
+              "static": true,
+              "description": "Time stamp of the previous logged event.",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "printThreshold",
+              "type": {
+                "text": "number"
+              },
+              "privacy": "protected",
+              "static": true,
+              "default": "1",
+              "description": "Events at and above this level will be printed to console."
+            },
+            {
+              "kind": "field",
+              "name": "workers",
+              "type": {
+                "text": "Worker[]"
+              },
+              "privacy": "protected",
+              "static": true,
+              "default": "[]"
+            },
+            {
+              "kind": "field",
+              "name": "separateWorkerScope",
+              "type": {
+                "text": "boolean"
+              },
+              "static": true,
+              "default": "false",
+              "description": "Keep messages in worker scope separate from the main thread. If set to false, logged messages will\nbe relayed to the main thread for logging."
+            },
+            {
+              "kind": "method",
+              "name": "add",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "type": {
+                    "text": "keyof typeof Log.LEVELS"
+                  },
+                  "description": "Event priority as key of Log.LEVELS."
+                },
+                {
+                  "name": "message",
+                  "type": {
+                    "text": "string | string[]"
+                  },
+                  "description": "Message as a string or array of strings (where each item is its own line)."
+                },
+                {
+                  "name": "scope",
+                  "type": {
+                    "text": "string"
+                  },
+                  "description": "Scope of the event."
+                },
+                {
+                  "name": "extra",
+                  "optional": true,
+                  "type": {
+                    "text": "unknown"
+                  }
+                }
+              ],
+              "description": "Add a new event to the log at the given level."
+            },
+            {
+              "kind": "method",
+              "name": "addEventListener",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "type": {
+                    "text": "LogLevel | LogLevel[]"
+                  },
+                  "description": "Log level or array of levels to listen to."
+                },
+                {
+                  "name": "listener",
+                  "type": {
+                    "text": "LogEventListener"
+                  },
+                  "description": "Method to call when a listened event occurs."
+                },
+                {
+                  "name": "owner",
+                  "optional": true,
+                  "type": {
+                    "text": "string"
+                  },
+                  "description": "Optional identifier for the owner of the listener (for mass removal of registered listeners)."
+                },
+                {
+                  "name": "singleEvent",
+                  "default": "false",
+                  "description": "Only call once (on the next event) and then remove the listener (default false)."
+                }
+              ],
+              "description": "Add a listener for events of each given logging `level`."
+            },
+            {
+              "kind": "method",
+              "name": "callEventListeners",
+              "privacy": "protected",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "type": {
+                    "text": "LogLevel"
+                  },
+                  "description": "Log level of the event."
+                },
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "LogEvent"
+                  },
+                  "description": "The actual event."
+                }
+              ],
+              "description": "Call all listeners for the given logging `level`."
+            },
+            {
+              "kind": "method",
+              "name": "clear",
+              "static": true,
+              "description": "Remove all events from the log."
+            },
+            {
+              "kind": "method",
+              "name": "debug",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "message",
+                  "type": {
+                    "text": "string | string[]"
+                  },
+                  "description": "Message as a string or array of strings (where each item is its own line)."
+                },
+                {
+                  "name": "scope",
+                  "type": {
+                    "text": "string"
+                  },
+                  "description": "Scope of the event."
+                }
+              ],
+              "description": "Add a message at debug level to the log."
+            },
+            {
+              "kind": "method",
+              "name": "error",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "message",
+                  "type": {
+                    "text": "string | string[]"
+                  },
+                  "description": "Message as a string or array of strings (where each item is its own line)."
+                },
+                {
+                  "name": "scope",
+                  "type": {
+                    "text": "string"
+                  },
+                  "description": "Scope of the event."
+                },
+                {
+                  "name": "error",
+                  "optional": true,
+                  "type": {
+                    "text": "Error"
+                  },
+                  "description": "Optional Error object."
+                }
+              ],
+              "description": "Add a message at error level to the log."
+            },
+            {
+              "kind": "method",
+              "name": "exportToJson",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "optional": true,
+                  "type": {
+                    "text": "LogLevel"
+                  },
+                  "description": "Optional priority level to filter the events by, will return all events if left empty."
+                }
+              ],
+              "description": "Export stored log events into JSON.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getAllEvents",
+              "static": true,
+              "description": "Get all logged events.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getAllEventsAtLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "type": {
+                    "text": "LogLevel"
+                  },
+                  "description": "Level of events to return."
+                }
+              ],
+              "description": "Return all log events at the given level.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getAllEventsAtOrAboveLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "type": {
+                    "text": "LogLevel"
+                  },
+                  "description": "Minimum level of events to return."
+                }
+              ],
+              "description": "Return all log events at or above the given level.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getAllEventsAtOrBelowLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "type": {
+                    "text": "LogLevel"
+                  },
+                  "description": "Maximum level of events to return."
+                }
+              ],
+              "description": "Return all log events at or below the given level.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getPrintThreshold",
+              "static": true,
+              "return": {
+                "type": {
+                  "text": "LogLevel"
+                }
+              },
+              "description": "Get current event printing threshold."
+            },
+            {
+              "kind": "method",
+              "name": "getScopeEvents",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "scope",
+                  "type": {
+                    "text": "string"
+                  },
+                  "description": "Scope to check."
+                }
+              ],
+              "description": "Get all the events added to the given `scope`.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "info",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "message",
+                  "type": {
+                    "text": "string | string[]"
+                  },
+                  "description": "Message as a string or array of strings (where each item is its own line)."
+                },
+                {
+                  "name": "scope",
+                  "type": {
+                    "text": "string"
+                  },
+                  "description": "Optional scope of the event."
+                }
+              ],
+              "description": "Add a message at info level to the log."
+            },
+            {
+              "kind": "method",
+              "name": "print",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "logEvent",
+                  "type": {
+                    "text": "LogEvent"
+                  },
+                  "description": "The event to print."
+                }
+              ],
+              "description": "Print a log event's message to console."
+            },
+            {
+              "kind": "method",
+              "name": "registerWorker",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "worker",
+                  "type": {
+                    "text": "Worker"
+                  },
+                  "description": "The worker to listen to and update print threshold changes to."
+                }
+              ],
+              "description": "Register a worker that is using the Log to relay messages to the main thread."
+            },
+            {
+              "kind": "method",
+              "name": "removeAllEventListeners",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "owner",
+                  "optional": true,
+                  "type": {
+                    "text": "string"
+                  },
+                  "description": "Optional owner to remove listeners from."
+                }
+              ],
+              "description": "Remove all event listeners. If `owner` is given, only event listeners from that owner are removed, otherwise\nevent listeners from all owners are removed (i.e. all event listeners).",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "removeEventListeners",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "type": {
+                    "text": "LogLevel | LogLevel[]"
+                  },
+                  "description": "Level or array of levels to match."
+                },
+                {
+                  "name": "listener",
+                  "type": {
+                    "text": "LogEventListener"
+                  },
+                  "description": "The listener to remove."
+                },
+                {
+                  "name": "owner",
+                  "optional": true,
+                  "type": {
+                    "text": "string"
+                  },
+                  "description": "Optional name of the owner to match."
+                }
+              ],
+              "description": "Remove a listener that matches the given `level` (or levels). A given `owner` name is also required to match,\nan empty owner will match listeners from named and unnammed owners.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "removeEventsAtLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "type": {
+                    "text": "LogLevel"
+                  },
+                  "description": "Level at which events will be removed."
+                }
+              ],
+              "description": "Remove all events _at_ the given priority `level` from the log."
+            },
+            {
+              "kind": "method",
+              "name": "removeEventsBelowLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "type": {
+                    "text": "LogLevel"
+                  },
+                  "description": "Level below which events will be removed (events at the level will remain)."
+                }
+              ],
+              "description": "Remove all events _below_ the given priority `level` from the log."
+            },
+            {
+              "kind": "method",
+              "name": "removeScopeEvents",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "scope",
+                  "type": {
+                    "text": "string"
+                  },
+                  "description": "The scope of the events."
+                }
+              ],
+              "description": "Remove all events of a given `scope` from the log."
+            },
+            {
+              "kind": "method",
+              "name": "removeScopeEventsAtLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "scope",
+                  "type": {
+                    "text": "string"
+                  },
+                  "description": "Scope of the events."
+                },
+                {
+                  "name": "level",
+                  "type": {
+                    "text": "LogLevel"
+                  },
+                  "description": "Level at which events will be removed."
+                }
+              ],
+              "description": "Remove events _at_ the given priority `level` in the given `scope` from the log."
+            },
+            {
+              "kind": "method",
+              "name": "removeScopeEventsBelowLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "scope",
+                  "type": {
+                    "text": "string"
+                  },
+                  "description": "Scope of the events."
+                },
+                {
+                  "name": "level",
+                  "type": {
+                    "text": "LogLevel"
+                  },
+                  "description": "Level below which events will be removed (events at the level will remain)."
+                }
+              ],
+              "description": "Remove all events _below_ the given priority `level` in the given `scope` from the log."
+            },
+            {
+              "kind": "method",
+              "name": "setPrintThreshold",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "type": {
+                    "text": "LogLevel"
+                  },
+                  "description": "Print messages at or above this level to console."
+                }
+              ],
+              "description": "Set a new printing threshold level."
+            },
+            {
+              "kind": "method",
+              "name": "warn",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "message",
+                  "type": {
+                    "text": "string | string[]"
+                  },
+                  "description": "Message as a string or array of strings (where each item is its own line)."
+                },
+                {
+                  "name": "scope",
+                  "type": {
+                    "text": "string"
+                  },
+                  "description": "Scope of the event."
+                }
+              ],
+              "description": "Add a message at warning level to the log."
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "Log",
+          "declaration": {
+            "name": "Log",
+            "module": "src/Log.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "Log",
+            "module": "src/Log.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/LogInspector.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "Log inspector element.\nThis component is used to display log events in a list format.\nIt allows filtering by priority and source, and supports pagination.",
+          "name": "LogInspector",
+          "members": [
+            {
+              "kind": "field",
+              "name": "#eventOrder",
+              "privacy": "private",
+              "type": {
+                "text": "1 | -1"
+              },
+              "default": "1",
+              "description": "Ordering if log events.\n- 1 is oldest to newest.\n- -1 is newest to oldest."
+            },
+            {
+              "kind": "field",
+              "name": "#infoOpen",
+              "privacy": "private",
+              "type": {
+                "text": "Record<string, boolean>"
+              },
+              "default": "{}",
+              "description": "Info open status."
+            },
+            {
+              "kind": "field",
+              "name": "#logEvents",
+              "privacy": "private",
+              "type": {
+                "text": "LogEvent[]"
+              },
+              "default": "[]",
+              "description": "List of log events in the inspector."
+            },
+            {
+              "kind": "field",
+              "name": "#logSources",
+              "privacy": "private",
+              "type": {
+                "text": "string[]"
+              },
+              "default": "[]",
+              "description": "List of source for which log events are available."
+            },
+            {
+              "kind": "field",
+              "name": "filteredEvents",
+              "type": {
+                "text": "LogEvent[]"
+              },
+              "privacy": "private",
+              "default": "[]",
+              "description": "The log events to display."
+            },
+            {
+              "kind": "field",
+              "name": "pageEvents",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "developmentMode",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false",
+              "description": "Is the app in production mode?\n- `development-mode` as an attribute.\n- `developmentMode` as a property."
+            },
+            {
+              "kind": "field",
+              "name": "displayPriorities",
+              "type": {
+                "text": "number[]"
+              },
+              "default": "[]",
+              "description": "Displayed priority levels. Empty means all priorities.\n- `display-priorities` as an attribute.\n- `displayPriorities` as a property."
+            },
+            {
+              "kind": "field",
+              "name": "displaySources",
+              "type": {
+                "text": "string[]"
+              },
+              "default": "[]",
+              "description": "Displaued sources. Empty means all sources are displayed.\n- `display-sources` as an attribute.\n- `displaySources` as a property."
+            },
+            {
+              "kind": "field",
+              "name": "eventsPerPage",
+              "type": {
+                "text": "number"
+              },
+              "default": "25",
+              "description": "The number of events to show per page.\n- `events-per-page` as an attribute.\n- `eventsPerPage` as a property."
+            },
+            {
+              "kind": "field",
+              "name": "useLog",
+              "type": {
+                "text": "typeof Log"
+              },
+              "default": "Log",
+              "description": "The log instance to use.\n- `log` as an attribute.\n- `useLog` as a property."
+            },
+            {
+              "kind": "field",
+              "name": "pageNumber",
+              "type": {
+                "text": "number"
+              },
+              "default": "1",
+              "description": "The current page number.\n- `page-number` as an attribute.\n- `pageNumber` as a property."
+            },
+            {
+              "kind": "method",
+              "name": "render"
+            },
+            {
+              "kind": "method",
+              "name": "_CreateUniqueId",
+              "privacy": "private",
+              "description": "Create an identifier that is unique among the identifiers created with this method.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "colorForLevel",
+              "parameters": [
+                {
+                  "name": "level",
+                  "type": {
+                    "text": "number"
+                  },
+                  "description": "The level of the event."
+                }
+              ],
+              "description": "Get the color for a given level.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "filterEvents",
+              "description": "Filter the log events based on the selected filters."
+            },
+            {
+              "kind": "method",
+              "name": "iconForLevel",
+              "parameters": [
+                {
+                  "name": "level",
+                  "type": {
+                    "text": "number"
+                  },
+                  "description": "The level of the event."
+                }
+              ],
+              "description": "Get the icon name for a given level.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "labelForLevel",
+              "parameters": [
+                {
+                  "name": "level",
+                  "type": {
+                    "text": "number"
+                  },
+                  "description": "The level of the event."
+                }
+              ],
+              "description": "Get the label for a given level.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "refreshEvents",
+              "description": "Refresh the log events and sources."
+            },
+            {
+              "kind": "method",
+              "name": "setdisplayPriorities",
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "CustomEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "setdisplaySources",
+              "parameters": [
+                {
+                  "name": "event",
+                  "type": {
+                    "text": "CustomEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "toggleExpand",
+              "parameters": [
+                {
+                  "name": "logEvent",
+                  "type": {
+                    "text": "LogEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "toggleInfo",
+              "parameters": [
+                {
+                  "name": "field",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "value",
+                  "optional": true,
+                  "type": {
+                    "text": "boolean"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "field",
+              "name": "styles",
+              "static": true,
+              "default": "css` /* Global element styles */ :host { font-family: sans-serif; } .light-mode { --background-default: #fff; --background-focus: #f8f8ff; --background-highlight: #f9f9f9; --border-default: #888; --border-faint: #ccc; --border-minor: #aaa; --border-highlight: #36f; --border-warning: #d62; --border-error: #c00; --icon-default: #333; --icon-faint: #999; --icon-minor: #666; --icon-highlight: #248; --icon-warning: #d62; --icon-error: #c00; --text-default: #333; --text-faint: #999; --text-minor: #666; --text-highlight: #248; --text-warning: #d62; --text-error: #c00; } /* General styles */ .hidden { display: none; } .oneliner { overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; } /* Component styles */ .component { background-color: var(--background-default); color: var(--text-default); } .level { min-width: 16em; } sl-select::part(form-control-label) { font-size: 0.9em; color: var(--text-faint); } .option { display: flex; gap: 1em; } .nav { display: flex; flex-wrap: nowrap; align-items: center; height: 2em; line-height: 2em; font-size: 0.9em; color: var(--text-minor); } .nav .range { margin-left: 0.25em; min-width: 7.5em; } .arrows { display: flex; gap: 0.5em; } .nav .order { display: flex; gap: 0.5em; margin-left: auto; } .log { padding: 0; } .row { display: flex; flex-wrap: nowrap; height: 1.75em; border: 1px solid var(--border-default); border-radius: 0.25em; margin: 0.25em 0; padding: 0.5em; line-height: 1.75em; cursor: pointer; } .row.expanded { height: auto; } .row:hover { background-color: var(--background-highlight); } .meta { position: relative; flex: 0; display: flex; flex-wrap: nowrap; } .icon { flex: 0; } .icon sl-icon { position: relative; top: 0.125em; } .scope { flex-shrink: 1; max-width: 10em; } .scope div { border-left: 1px solid var(--border-faint); border-right: 1px solid var(--border-faint); margin: 0 0.5em; padding: 0 0.5em; } .message { position: relative; flex: 1; padding-right: 0.25em; overflow: hidden; } .message span { display: inline-block; white-space: pre-line; max-width: calc(100% - 4.5em); } .message .time { position: absolute; top: 0; right: 0.5em; height: 100%; text-align: right; font-size: 0.9em; white-space: nowrap; color: var(--text-minor); } .message pre { white-space: pre-wrap; margin: 1em 0 0.25em 0; line-height: 1.5em; } .message hr { margin: 0.5em 0; border: none; border-top: 1px solid; } .source { flex: 1; } `"
+            }
+          ],
+          "superclass": {
+            "name": "LitElement",
+            "package": "lit"
+          },
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "LogInspector",
+          "declaration": {
+            "name": "LogInspector",
+            "module": "src/LogInspector.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "src/index.ts",
+      "declarations": [],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "Log",
+          "declaration": {
+            "name": "Log",
+            "module": "src/index.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "LogInspector",
+          "declaration": {
+            "name": "LogInspector",
+            "module": "src/index.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "LogLevel",
+          "declaration": {
+            "name": "LogLevel",
+            "module": "src/index.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "LogEventListener",
+          "declaration": {
+            "name": "LogEventListener",
+            "module": "src/index.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "LogEventProps",
+          "declaration": {
+            "name": "LogEventProps",
+            "module": "src/index.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "LogEventTimestamp",
+          "declaration": {
+            "name": "LogEventTimestamp",
+            "module": "src/index.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "Log",
+            "module": "src/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "dist/index.js",
+      "declarations": [],
+      "exports": []
+    }
+  ]
+}
