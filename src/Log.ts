@@ -154,7 +154,7 @@ export class Log {
             }
             Log.events.push(logEvent)
             Log._prevTimestamp = logEvent.time.toTime()
-            if (this.maxEvents > 0 && Log.events.length > Log.maxEvents) {
+            if (Log.maxEvents > 0 && Log.events.length > Log.maxEvents) {
                 // Remove the oldest event if we have too many.
                 Log.events.shift()
             }
