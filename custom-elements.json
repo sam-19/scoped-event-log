@@ -4,6 +4,40 @@
   "modules": [
     {
       "kind": "javascript-module",
+      "path": "vite.config.inspector.ts",
+      "declarations": [],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "module": "vite.config.inspector.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "vite.config.log.ts",
+      "declarations": [],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "module": "vite.config.log.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "dist/index.js",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
       "path": "src/Log.ts",
       "declarations": [
         {
@@ -979,7 +1013,463 @@
     },
     {
       "kind": "javascript-module",
-      "path": "dist/index.js",
+      "path": "umd/inspector/inspector.umd.js",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "t"
+        },
+        {
+          "kind": "variable",
+          "name": "e",
+          "default": "new MutationObserver(Do)"
+        },
+        {
+          "kind": "class",
+          "description": "",
+          "name": "anonymous_3",
+          "superclass": {
+            "name": "t",
+            "module": "umd/inspector/inspector.umd.js"
+          },
+          "tagName": "e",
+          "customElement": true,
+          "members": [
+            {
+              "kind": "field",
+              "name": "prevTimestamp",
+              "static": true,
+              "readonly": true,
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "add",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                },
+                {
+                  "name": "s"
+                },
+                {
+                  "name": "n"
+                },
+                {
+                  "name": "i"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "addEventListener",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                },
+                {
+                  "name": "s"
+                },
+                {
+                  "name": "n"
+                },
+                {
+                  "name": "i",
+                  "default": "!1"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "callEventListeners",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                },
+                {
+                  "name": "s"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "clear",
+              "static": true,
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "debug",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                },
+                {
+                  "name": "s"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "error",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                },
+                {
+                  "name": "s"
+                },
+                {
+                  "name": "n"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "exportToJson",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getAllEvents",
+              "static": true,
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getAllEventsAtLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getAllEventsAtOrAboveLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getAllEventsAtOrBelowLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getPrintThreshold",
+              "static": true,
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getScopeEvents",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "info",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                },
+                {
+                  "name": "s"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "print",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "registerWorker",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "removeAllEventListeners",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "removeEventListeners",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                },
+                {
+                  "name": "s"
+                },
+                {
+                  "name": "n"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "removeEventsAtLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "removeEventsBelowLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "removeScopeEvents",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "removeScopeEventsAtLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                },
+                {
+                  "name": "s"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "removeScopeEventsBelowLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                },
+                {
+                  "name": "s"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "setPrintThreshold",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "warn",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "e"
+                },
+                {
+                  "name": "s"
+                }
+              ],
+              "inheritedFrom": {
+                "name": "t",
+                "module": "umd/log/log.umd.js"
+              }
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "custom-element-definition",
+          "name": "e",
+          "declaration": {
+            "name": "t",
+            "module": "umd/inspector/inspector.umd.js"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "e",
+          "declaration": {
+            "name": "t",
+            "module": "umd/inspector/inspector.umd.js"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "e",
+          "declaration": {
+            "name": "t",
+            "module": "umd/inspector/inspector.umd.js"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "e",
+          "declaration": {
+            "name": "anonymous_3",
+            "module": "umd/inspector/inspector.umd.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "umd/log/log.umd.js",
       "declarations": [],
       "exports": []
     }

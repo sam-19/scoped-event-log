@@ -8,10 +8,10 @@ export default defineConfig({
         lib: {
             entry: resolve(__dirname, './src/LogInspector.ts'),
             name: 'LogInspector',
-            fileName: 'log-inspector',
+            fileName: 'inspector',
         },
         minify: 'esbuild',
-        outDir: resolve(__dirname, 'umd'),
+        outDir: resolve(__dirname, 'umd', 'inspector'),
         rollupOptions: {
             external: [],
             output: {
