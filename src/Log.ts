@@ -127,8 +127,15 @@ export class Log {
      * @param level - Event priority as key of Log.LEVELS.
      * @param message - Message as a string or array of strings (where each item is its own line).
      * @param scope - Scope of the event.
+     * @param sensitive - Whether the event contains sensitive information (default false).
      */
-    static add (level: keyof typeof Log.LEVELS, message: string | string[], scope: string, extra?: unknown) {
+    static add (
+        level: keyof typeof Log.LEVELS,
+        message: string | string[],
+        scope: string,
+        sensitive = false,
+        extra?: unknown
+    ) {
         // @ts-expect-error: Check if we are in worker scope.
         if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope &&
             typeof postMessage !== 'undefined' &&
@@ -148,7 +155,7 @@ export class Log {
             // Not a valid logging level
             console.warn(`Rejected an event with an invalid log level: (${level}) ${message}`)
         } else {
-            const logEvent = new LogEvent(Log.LEVELS[level], message, scope, extra)
+            const logEvent = new LogEvent(Log.LEVELS[level], message, scope, sensitive, extra)
             if (Log.LEVELS[level] >= Log.printThreshold) {
                 Log.print(logEvent)
             }
@@ -234,9 +241,10 @@ export class Log {
      * Add a message at debug level to the log.
      * @param message - Message as a string or array of strings (where each item is its own line).
      * @param scope - Scope of the event.
+     * @param sensitive - Whether the event contains sensitive information (default false).
      */
-    static debug (message: string | string[], scope: string) {
-        Log.add("DEBUG", message, scope)
+    static debug (message: string | string[], scope: string, sensitive?: boolean) {
+        Log.add("DEBUG", message, scope, sensitive)
     }
 
     /**
@@ -244,15 +252,16 @@ export class Log {
      * @param message - Message as a string or array of strings (where each item is its own line).
      * @param scope - Scope of the event.
      * @param error - Optional Error object.
+     * @param sensitive - Whether the event contains sensitive information (default false).
      */
-    static error (message: string | string[], scope: string, error?: Error) {
+    static error (message: string | string[], scope: string, error?: Error, sensitive?: boolean) {
         // TODO: This sometimes gives unexpected results when the origin of the error is traced
         //       back to this line. Alternative ways to find the call stack without throwing
         //       an error?
         error = error || new Error(Array.isArray(message) ? message.join() : message)
         let stack = (error.stack || '').split(/\r?\n/g)
         stack = stack.length > 1 ? stack.slice(1) : stack
-        Log.add("ERROR", message, scope, stack)
+        Log.add("ERROR", message, scope, sensitive, stack)
     }
 
     /**
@@ -342,9 +351,10 @@ export class Log {
      * Add a message at info level to the log.
      * @param message - Message as a string or array of strings (where each item is its own line).
      * @param scope - Optional scope of the event.
+     * @param sensitive - Whether the event contains sensitive information (default false).
      */
-    static info (message: string | string[], scope: string) {
-        Log.add("INFO", message, scope)
+    static info (message: string | string[], scope: string, sensitive?: boolean) {
+        Log.add("INFO", message, scope, sensitive)
     }
 
     /**
@@ -608,9 +618,10 @@ export class Log {
      * Add a message at warning level to the log.
      * @param message - Message as a string or array of strings (where each item is its own line).
      * @param scope - Scope of the event.
+     * @param sensitive - Whether the event contains sensitive information (default false).
      */
-    static warn (message: string | string[], scope: string) {
-        Log.add("WARN", message, scope)
+    static warn (message: string | string[], scope: string, sensitive?: boolean) {
+        Log.add("WARN", message, scope, sensitive)
     }
 }
 
@@ -621,45 +632,66 @@ export class Log {
  */
 class LogEvent {
     /** Any extra properties. */
-    protected _extra: unknown
+    #extra: unknown
     /** Event priority level. */
-    protected _level: number
+    #level: number
     /** Message lines as a string or an array of strings. */
-    protected _message: string | string[]
+    #message: string | string[]
     /** Has this event's message already been printed to console. */
-    protected _printed: boolean
+    #printed: boolean
     /** Scope of the event. */
-    protected _scope: string
+    #scope: string
+    /** Is the message content of this event sensitive? */
+    #sensitive: boolean
     /** Timestamp of logging the event. */
-    protected _time: LogTimestamp
+    #time: LogTimestamp
 
-    constructor (level: number, message: string | string[], scope: string, extra?: unknown) {
-        this._extra = extra
-        this._level = level
-        this._message = message
-        this._printed = false
-        this._scope = scope
-        this._time = new LogTimestamp()
+    /**
+     * Create a new log event.
+     * @param level - Event priority level.
+     * @param message - Message lines as a string or an array of strings.
+     * @param scope - Scope of the event.
+     * @param sensitive - Is the message content sensitive (default false).
+     * @param extra - Any extra properties.
+     */
+    constructor (level: number, message: string | string[], scope: string, sensitive?: boolean, extra?: unknown) {
+        this.#extra = extra
+        this.#level = level
+        this.#message = message
+        this.#printed = false
+        this.#scope = scope
+        this.#sensitive = sensitive || false
+        this.#time = new LogTimestamp()
     }
 
     // Properties are immutable after initiation
+    /** Possible extra properties. */
     get extra () {
-        return this._extra
+        return this.#extra
     }
+    /** Event priority level. */
     get level () {
-        return this._level
+        return this.#level
     }
+    /** Message lines as a string or an array of strings. */
     get message () {
-        return this._message
+        return this.#sensitive ? '### SENSITIVE INFO REDACTED ###' : this.#message
     }
+    /** Has this event's message already been printed to console. */
     get printed () {
-        return this._printed
+        return this.#printed
     }
+    /** Scope of the event. */
     get scope () {
-        return this._scope
+        return this.#scope
     }
+    /** Is the message content of this event sensitive? */
+    get sensitive () {
+        return this.#sensitive
+    }
+    /** Timestamp of logging the event. */
     get time () {
-        return this._time
+        return this.#time
     }
 }
 
@@ -667,21 +699,22 @@ class LogEvent {
  * Log event timestamp.
  */
 class LogTimestamp {
-    protected _date: Date
-    protected _delta: number | null
+    #date: Date
+    #delta: number | null
 
     constructor () {
-        this._date = new Date()
-        this._delta = Log.prevTimestamp ? this.date.getTime() - Log.prevTimestamp : null
+        this.#date = new Date()
+        this.#delta = Log.prevTimestamp ? this.date.getTime() - Log.prevTimestamp : null
     }
 
     // Properties are immutable after initiation
+    /** Date of the log event. */
     get date () {
-        return this._date
+        return this.#date
     }
     /** Time elapsed since the previous log event (in milliseconds). */
     get delta () {
-        return this._delta
+        return this.#delta
     }
     /**
      * Get a standard length datetime string from this timestamp

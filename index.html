@@ -46,5 +46,18 @@
         clearInterval(intv)
       }
     }, 1)
+    const html = document.querySelector('html')
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      html.style.backgroundColor = '#111';
+    } else {
+      html.style.backgroundColor = '#fff';
+    }
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+      if (event.matches) {
+        html.style.backgroundColor = '#111';
+      } else {
+        html.style.backgroundColor = '#fff';
+      }
+    })
   </script>
 </html>

@@ -176,6 +176,11 @@
                   "description": "Scope of the event."
                 },
                 {
+                  "name": "sensitive",
+                  "default": "false",
+                  "description": "Whether the event contains sensitive information (default false)."
+                },
+                {
                   "name": "extra",
                   "optional": true,
                   "type": {
@@ -267,6 +272,14 @@
                     "text": "string"
                   },
                   "description": "Scope of the event."
+                },
+                {
+                  "name": "sensitive",
+                  "optional": true,
+                  "type": {
+                    "text": "boolean"
+                  },
+                  "description": "Whether the event contains sensitive information (default false)."
                 }
               ],
               "description": "Add a message at debug level to the log."
@@ -297,6 +310,14 @@
                     "text": "Error"
                   },
                   "description": "Optional Error object."
+                },
+                {
+                  "name": "sensitive",
+                  "optional": true,
+                  "type": {
+                    "text": "boolean"
+                  },
+                  "description": "Whether the event contains sensitive information (default false)."
                 }
               ],
               "description": "Add a message at error level to the log."
@@ -442,6 +463,14 @@
                     "text": "string"
                   },
                   "description": "Optional scope of the event."
+                },
+                {
+                  "name": "sensitive",
+                  "optional": true,
+                  "type": {
+                    "text": "boolean"
+                  },
+                  "description": "Whether the event contains sensitive information (default false)."
                 }
               ],
               "description": "Add a message at info level to the log."
@@ -654,6 +683,14 @@
                     "text": "string"
                   },
                   "description": "Scope of the event."
+                },
+                {
+                  "name": "sensitive",
+                  "optional": true,
+                  "type": {
+                    "text": "boolean"
+                  },
+                  "description": "Whether the event contains sensitive information (default false)."
                 }
               ],
               "description": "Add a message at warning level to the log."
@@ -731,6 +768,16 @@
             },
             {
               "kind": "field",
+              "name": "#theme",
+              "privacy": "private",
+              "type": {
+                "text": "'dark' | 'light'"
+              },
+              "default": "'light'",
+              "description": "Current theme."
+            },
+            {
+              "kind": "field",
               "name": "filteredEvents",
               "type": {
                 "text": "LogEvent[]"
@@ -782,12 +829,12 @@
             },
             {
               "kind": "field",
-              "name": "useLog",
+              "name": "mode",
               "type": {
-                "text": "typeof Log"
+                "text": "'dark' | 'light' | 'system'"
               },
-              "default": "Log",
-              "description": "The log instance to use.\n- `log` as an attribute.\n- `useLog` as a property."
+              "default": "'system'",
+              "description": "Override the application mode."
             },
             {
               "kind": "field",
@@ -799,12 +846,36 @@
               "description": "The current page number.\n- `page-number` as an attribute.\n- `pageNumber` as a property."
             },
             {
+              "kind": "field",
+              "name": "useLog",
+              "type": {
+                "text": "typeof Log"
+              },
+              "default": "Log",
+              "description": "The log instance to use.\n- `log` as an attribute.\n- `useLog` as a property."
+            },
+            {
               "kind": "method",
               "name": "render"
             },
             {
               "kind": "method",
-              "name": "_CreateUniqueId",
+              "name": "_applyMode",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "mode",
+                  "type": {
+                    "text": "'dark' | 'light'"
+                  },
+                  "description": "The mode to apply, either 'dark' or 'light'."
+                }
+              ],
+              "description": "Apply the selected mode to the component."
+            },
+            {
+              "kind": "method",
+              "name": "_createUniqueId",
               "privacy": "private",
               "description": "Create an identifier that is unique among the identifiers created with this method.",
               "return": {
@@ -939,7 +1010,7 @@
               "kind": "field",
               "name": "styles",
               "static": true,
-              "default": "css` /* Global element styles */ :host { font-family: sans-serif; } .light-mode { --background-default: #fff; --background-focus: #f8f8ff; --background-highlight: #f9f9f9; --border-default: #888; --border-faint: #ccc; --border-minor: #aaa; --border-highlight: #36f; --border-warning: #d62; --border-error: #c00; --icon-default: #333; --icon-faint: #999; --icon-minor: #666; --icon-highlight: #248; --icon-warning: #d62; --icon-error: #c00; --text-default: #333; --text-faint: #999; --text-minor: #666; --text-highlight: #248; --text-warning: #d62; --text-error: #c00; } /* General styles */ .hidden { display: none; } .oneliner { overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; } /* Component styles */ .component { background-color: var(--background-default); color: var(--text-default); } .level { min-width: 16em; } sl-select::part(form-control-label) { font-size: 0.9em; color: var(--text-faint); } .option { display: flex; gap: 1em; } .nav { display: flex; flex-wrap: nowrap; align-items: center; height: 2em; line-height: 2em; font-size: 0.9em; color: var(--text-minor); } .nav .range { margin-left: 0.25em; min-width: 7.5em; } .arrows { display: flex; gap: 0.5em; } .nav .order { display: flex; gap: 0.5em; margin-left: auto; } .log { padding: 0; } .row { display: flex; flex-wrap: nowrap; height: 1.75em; border: 1px solid var(--border-default); border-radius: 0.25em; margin: 0.25em 0; padding: 0.5em; line-height: 1.75em; cursor: pointer; } .row.expanded { height: auto; } .row:hover { background-color: var(--background-highlight); } .meta { position: relative; flex: 0; display: flex; flex-wrap: nowrap; } .icon { flex: 0; } .icon sl-icon { position: relative; top: 0.125em; } .scope { flex-shrink: 1; max-width: 10em; } .scope div { border-left: 1px solid var(--border-faint); border-right: 1px solid var(--border-faint); margin: 0 0.5em; padding: 0 0.5em; } .message { position: relative; flex: 1; padding-right: 0.25em; overflow: hidden; } .message span { display: inline-block; white-space: pre-line; max-width: calc(100% - 4.5em); } .message .time { position: absolute; top: 0; right: 0.5em; height: 100%; text-align: right; font-size: 0.9em; white-space: nowrap; color: var(--text-minor); } .message pre { white-space: pre-wrap; margin: 1em 0 0.25em 0; line-height: 1.5em; } .message hr { margin: 0.5em 0; border: none; border-top: 1px solid; } .source { flex: 1; } `"
+              "default": "css` /* Global element styles */ :host { font-family: sans-serif; } .dark-mode { --background-default: #111; --background-focus: #181818; --background-highlight: #222; --border-default: #888; --border-faint: #666; --border-minor: #444; --border-highlight: #36f; --border-warning: #d62; --border-error: #c00; --icon-default: #aaa; --icon-faint: #777; --icon-minor: #999; --icon-highlight: #248; --icon-warning: #d62; --icon-error: #c00; --text-default: #ccc; --text-faint: #999; --text-minor: #aaa; --text-highlight: #248; --text-warning: #d62; --text-error: #c00; } .light-mode { --background-default: #fff; --background-focus: #f8f8ff; --background-highlight: #f9f9f9; --border-default: #888; --border-faint: #ccc; --border-minor: #aaa; --border-highlight: #36f; --border-warning: #d62; --border-error: #c00; --icon-default: #333; --icon-faint: #999; --icon-minor: #666; --icon-highlight: #248; --icon-warning: #d62; --icon-error: #c00; --text-default: #333; --text-faint: #999; --text-minor: #666; --text-highlight: #248; --text-warning: #d62; --text-error: #c00; } /* General styles */ .hidden { display: none; } .oneliner { overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; } /* Component styles */ .component { background-color: var(--background-default); color: var(--text-default); } .level { min-width: 16em; } sl-select::part(form-control-label) { font-size: 0.9em; color: var(--text-faint); } .option { display: flex; gap: 1em; } .nav { display: flex; flex-wrap: nowrap; align-items: center; height: 2em; line-height: 2em; font-size: 0.9em; color: var(--text-minor); } .nav .range { margin-left: 0.25em; min-width: 7.5em; } .arrows { display: flex; gap: 0.5em; } .nav .order { display: flex; gap: 0.5em; margin-left: auto; } .log { padding: 0; } .row { display: flex; flex-wrap: nowrap; height: 1.75em; border: 1px solid var(--border-default); border-radius: 0.25em; margin: 0.25em 0; padding: 0.5em; line-height: 1.75em; cursor: pointer; } .row.expanded { height: auto; } .row:hover { background-color: var(--background-highlight); } .meta { position: relative; flex: 0; display: flex; flex-wrap: nowrap; } .icon { flex: 0; } .icon sl-icon { position: relative; top: 0.125em; } .scope { flex-shrink: 1; max-width: 10em; } .scope div { border-left: 1px solid var(--border-faint); border-right: 1px solid var(--border-faint); margin: 0 0.5em; padding: 0 0.5em; } .message { position: relative; flex: 1; padding-right: 0.25em; overflow: hidden; } .message span { display: inline-block; white-space: pre-line; max-width: calc(100% - 4.5em); } .message .time { position: absolute; top: 0; right: 0.5em; height: 100%; text-align: right; font-size: 0.9em; white-space: nowrap; color: var(--text-minor); } .message pre { white-space: pre-wrap; margin: 1em 0 0.25em 0; line-height: 1.5em; } .message hr { margin: 0.5em 0; border: none; border-top: 1px solid; } .source { flex: 1; } `"
             }
           ],
           "superclass": {
@@ -1026,7 +1097,7 @@
         {
           "kind": "variable",
           "name": "e",
-          "default": "new MutationObserver(Do)"
+          "default": "new MutationObserver(Rs)"
         },
         {
           "kind": "class",
@@ -1064,7 +1135,11 @@
                   "name": "n"
                 },
                 {
-                  "name": "i"
+                  "name": "i",
+                  "default": "!1"
+                },
+                {
+                  "name": "r"
                 }
               ],
               "inheritedFrom": {
@@ -1132,6 +1207,9 @@
                 },
                 {
                   "name": "s"
+                },
+                {
+                  "name": "n"
                 }
               ],
               "inheritedFrom": {
@@ -1152,6 +1230,9 @@
                 },
                 {
                   "name": "n"
+                },
+                {
+                  "name": "i"
                 }
               ],
               "inheritedFrom": {
@@ -1257,6 +1338,9 @@
                 },
                 {
                   "name": "s"
+                },
+                {
+                  "name": "n"
                 }
               ],
               "inheritedFrom": {
@@ -1426,6 +1510,9 @@
                 },
                 {
                   "name": "s"
+                },
+                {
+                  "name": "n"
                 }
               ],
               "inheritedFrom": {

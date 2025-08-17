@@ -5,6 +5,7 @@ import { setBasePath } from '@shoelace-style/shoelace/dist/utilities/base-path.j
 
 // Shoelace base path
 setBasePath('https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/dist/')
+import '@shoelace-style/shoelace/dist/themes/dark.css'
 import '@shoelace-style/shoelace/dist/themes/light.css'
 
 // Shoelace components
@@ -42,6 +43,8 @@ export class LogInspector extends LitElement {
   #logEvents: LogEvent[] = []
   /** List of source for which log events are available. */
   #logSources: string[] = []
+  /** Current theme. */
+  #theme: 'dark' | 'light' = 'light'
   /**
    * Crate a new log inspector element.
    * This will automatically add event listeners to the log instance.
@@ -55,6 +58,21 @@ export class LogInspector extends LitElement {
   constructor () {
     super()
     const eventLevels = ['ERROR', 'INFO', 'WARN'] as ("DEBUG" | "ERROR" | "INFO" | "WARN")[]
+    // Apply theme and monitor for mode changes.
+    if (this.mode === 'light') {
+        this.classList.remove('sl-theme-dark')
+        this.#theme = 'light'
+    } else if (this.mode === 'dark') {
+        this.classList.add('sl-theme-dark')
+        this.#theme = 'dark'
+    } else {
+      this._applyMode(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+        if (this.mode === 'system') {
+          this._applyMode(event.matches ? 'dark' : 'light')
+        }
+      })
+    }
     requestAnimationFrame(() => {
       // Attributes need time to be initialized.
       if (this.developmentMode) {
@@ -110,13 +128,11 @@ export class LogInspector extends LitElement {
   @property({ type: Number, attribute: 'events-per-page' })
   eventsPerPage = 25
   /**
-   * The log instance to use.
-   * - `log` as an attribute.
-   * - `useLog` as a property.
-   * @default Log (global Log instance)
+   * Override the application mode.
+   * @default 'system'
    */
-  @property({ type: Object, attribute: 'log' })
-  useLog: typeof Log = Log
+  @property({ type: String, attribute: 'mode' })
+  mode: 'dark' | 'light' | 'system' = 'system'
   /**
    * The current page number.
    * - `page-number` as an attribute.
@@ -125,10 +141,18 @@ export class LogInspector extends LitElement {
    */
   @property({ type: Number, attribute: 'page-number' })
   pageNumber = 1
+  /**
+   * The log instance to use.
+   * - `log` as an attribute.
+   * - `useLog` as a property.
+   * @default Log (global Log instance)
+   */
+  @property({ type: Object, attribute: 'log' })
+  useLog: typeof Log = Log
 
   render() {
     return html`
-      <div class="component light-mode">
+      <div class="component ${this.#theme}-mode sl-theme-${this.#theme}">
         <sl-details summary="Filters">
           <div class="option">
             <sl-select
@@ -267,12 +291,26 @@ export class LogInspector extends LitElement {
     `
   }
 
-
+  /**
+   * Apply the selected mode to the component.
+   * @param mode The mode to apply, either 'dark' or 'light'.
+   */
+  private _applyMode (mode: 'dark' | 'light') {
+    if (mode === 'dark') {
+      this.classList.add('sl-theme-dark')
+      this.#theme = 'dark'
+      this.requestUpdate()
+    } else {
+      this.classList.remove('sl-theme-dark')
+      this.#theme = 'light'
+      this.requestUpdate()
+    }
+  }
   /**
    * Create an identifier that is unique among the identifiers created with this method.
    * @returns Unique identifier as a string.
    */
-  private _CreateUniqueId () {
+  private _createUniqueId () {
     let retries = 100
     while (retries > 0) {
       const id = (Date.now() + Math.random()).toString(36)
@@ -366,7 +404,7 @@ export class LogInspector extends LitElement {
     for (const ev of this.useLog.getAllEventsAtOrAboveLevel(this.developmentMode ? "DEBUG" : "INFO")) {
       this.#logEvents.push(
         Object.assign(ev, {
-          id: this._CreateUniqueId(),
+          id: this._createUniqueId(),
           expanded: false,
         })
       )
@@ -417,6 +455,29 @@ export class LogInspector extends LitElement {
     /* Global element styles */
     :host {
       font-family: sans-serif;
+    }
+    .dark-mode {
+      --background-default: #111;
+      --background-focus: #181818;
+      --background-highlight: #222;
+      --border-default: #888;
+      --border-faint: #666;
+      --border-minor: #444;
+      --border-highlight: #36f;
+      --border-warning: #d62;
+      --border-error: #c00;
+      --icon-default: #aaa;
+      --icon-faint: #777;
+      --icon-minor: #999;
+      --icon-highlight: #248;
+      --icon-warning: #d62;
+      --icon-error: #c00;
+      --text-default: #ccc;
+      --text-faint: #999;
+      --text-minor: #aaa;
+      --text-highlight: #248;
+      --text-warning: #d62;
+      --text-error: #c00;
     }
     .light-mode {
       --background-default: #fff;
