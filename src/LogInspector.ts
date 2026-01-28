@@ -152,15 +152,16 @@ export class LogInspector extends LitElement {
 
   render() {
     return html`
-      <div class="component ${this.#theme}-mode sl-theme-${this.#theme}">
+      <div class="component ${this.#theme}-mode sl-theme-${this.#theme}" part="component">
         <sl-details summary="Filters">
-          <div class="option">
+          <div class="option" part="option">
             <sl-select
               class="level"
               clearable
               hoist
               label="Priority"
               multiple
+              part="level"
               placeholder="All"
               value=${this.displayPriorities.join(' ')}
               @sl-change=${this.setdisplayPriorities}
@@ -179,6 +180,7 @@ export class LogInspector extends LitElement {
               hoist
               label="Source"
               multiple
+              part="source"
               placeholder="All"
               value=${this.displaySources.join(' ')}
               @sl-change=${this.setdisplaySources}
@@ -190,20 +192,21 @@ export class LogInspector extends LitElement {
             </sl-select>
           </div>
         </sl-details>
-        <sl-divider></sl-divider>
-        <div class="nav">
-          <div class="range">
+        <sl-divider part="divider"></sl-divider>
+        <div class="nav" part="nav">
+          <div class="range" part="range">
             ${(this.pageNumber - 1)*this.eventsPerPage + 1}
             -
             ${Math.min(this.pageNumber*this.eventsPerPage, this.filteredEvents.length)}
             /
             ${this.filteredEvents.length}
           </div>
-          <div class="arrows">
+          <div class="arrows" part="arrows">
             <sl-tooltip content="Previous page">
               <sl-icon-button
                 name="chevron-left"
                 ?disabled=${this.pageNumber <= 1}
+                part="previous-page"
                 @click=${() => {
                   this.pageNumber--
                 }}
@@ -213,13 +216,14 @@ export class LogInspector extends LitElement {
               <sl-icon-button
                 name="chevron-right"
                 ?disabled=${this.pageNumber*this.eventsPerPage >= this.filteredEvents.length}
+                part="next-page"
                 @click=${() => {
                   this.pageNumber++
                 }}
               ></sl-icon-button>
             </sl-tooltip>
           </div>
-          <div class="order">
+          <div class="order" part="order">
             Order:
             <sl-tooltip
               content=${this.#eventOrder === -1 ? 'Oldest to newest' : 'Newest to oldest'}
@@ -234,16 +238,17 @@ export class LogInspector extends LitElement {
             </sl-tooltip>
           </div>
         </div>
-        <ul class="log">
+        <ul class="log" part="log">
             ${ repeat(this.pageEvents, (event) => `log-event-${event.id}`, (event, _idx) => {
               return html`
                 <li
                   class="row${event.expanded ? ' expanded' : ''}"
+                  part="row"
                   style="border-color: var(--border-${this.colorForLevel(event.level)})"
                   @click=${this.toggleExpand(event)}
                 >
-                  <div class="meta">
-                    <div class="icon">
+                  <div class="meta" part="meta">
+                    <div class="icon" part="icon">
                       <sl-tooltip content="Priority: ${this.labelForLevel(event.level)}">
                         <sl-icon
                           name=${this.iconForLevel(event.level)}
@@ -251,13 +256,13 @@ export class LogInspector extends LitElement {
                         ></sl-icon>
                       </sl-tooltip>
                     </div>
-                    <div class="scope">
+                    <div class="scope" part="scope">
                       <sl-tooltip content="Scope: ${event.scope}">
                         <div class="oneliner">${event.scope}</div>
                       </sl-tooltip>
                     </div>
                   </div>
-                  <div class="message">
+                  <div class="message" part="message">
                     <span class="${event.expanded ? '' : 'oneliner'}">${
                       Array.isArray(event.message) ? event.message.join('\n') : event.message
                     }</span>
@@ -515,6 +520,8 @@ export class LogInspector extends LitElement {
     .component {
       background-color: var(--background-default);
       color: var(--text-default);
+      max-height: 100%;
+      overflow: hidden;
     }
     .level {
       min-width: 16em;
@@ -551,6 +558,8 @@ export class LogInspector extends LitElement {
       }
     .log {
       padding: 0;
+      height: 100%;
+      overflow: auto;
     }
     .row {
       display: flex;
