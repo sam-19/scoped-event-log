@@ -1,22 +1,19 @@
 import { LitElement, css, html, nothing } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import { repeat } from 'lit/directives/repeat.js'
-import { setBasePath } from '@shoelace-style/shoelace/dist/utilities/base-path.js'
 
-// Shoelace base path
-setBasePath('https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/dist/')
-import '@shoelace-style/shoelace/dist/themes/dark.css'
-import '@shoelace-style/shoelace/dist/themes/light.css'
+// WebAwesome imports
+import '@awesome.me/webawesome/dist/styles/themes/default.css'
 
 // Shoelace components
-import '@shoelace-style/shoelace/dist/components/button/button.js'
-import '@shoelace-style/shoelace/dist/components/details/details.js'
-import '@shoelace-style/shoelace/dist/components/divider/divider.js'
-import '@shoelace-style/shoelace/dist/components/icon/icon.js'
-import '@shoelace-style/shoelace/dist/components/icon-button/icon-button.js'
-import '@shoelace-style/shoelace/dist/components/option/option.js'
-import '@shoelace-style/shoelace/dist/components/select/select.js'
-import '@shoelace-style/shoelace/dist/components/tooltip/tooltip.js'
+import '@awesome.me/webawesome/dist/components/button/button.js'
+import '@awesome.me/webawesome/dist/components/details/details.js'
+import '@awesome.me/webawesome/dist/components/divider/divider.js'
+import '@awesome.me/webawesome/dist/components/icon/icon.js'
+import '@awesome.me/webawesome/dist/components/option/option.js'
+import '@awesome.me/webawesome/dist/components/scroller/scroller.js'
+import '@awesome.me/webawesome/dist/components/select/select.js'
+import '@awesome.me/webawesome/dist/components/tooltip/tooltip.js'
 import { Log, type LogEventProps } from '.'
 
 type LogEvent = LogEventProps & {
@@ -60,10 +57,10 @@ export class LogInspector extends LitElement {
     const eventLevels = ['ERROR', 'INFO', 'WARN'] as ("DEBUG" | "ERROR" | "INFO" | "WARN")[]
     // Apply theme and monitor for mode changes.
     if (this.mode === 'light') {
-        this.classList.remove('sl-theme-dark')
+        this.classList.remove('wa-dark')
         this.#theme = 'light'
     } else if (this.mode === 'dark') {
-        this.classList.add('sl-theme-dark')
+        this.classList.add('wa-dark')
         this.#theme = 'dark'
     } else {
       this._applyMode(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
@@ -152,10 +149,10 @@ export class LogInspector extends LitElement {
 
   render() {
     return html`
-      <div class="component ${this.#theme}-mode sl-theme-${this.#theme}" part="component">
-        <sl-details summary="Filters">
+      <div class="component ${this.#theme}-mode wa-${this.#theme}" part="component">
+        <wa-details summary="Filters">
           <div class="option" part="option">
-            <sl-select
+            <wa-select
               class="level"
               clearable
               hoist
@@ -163,18 +160,18 @@ export class LogInspector extends LitElement {
               multiple
               part="level"
               placeholder="All"
-              value=${this.displayPriorities.join(' ')}
-              @sl-change=${this.setdisplayPriorities}
+              .value=${this.displayPriorities.map((level) => level.toString())}
+              @change=${this.setdisplayPriorities}
             >
-              <sl-option value="3">Error</sl-option>
-              <sl-option value="2">Warning</sl-option>
-              <sl-option value="1">Info</sl-option>
+              <wa-option value="3">Error</wa-option>
+              <wa-option value="2">Warning</wa-option>
+              <wa-option value="1">Info</wa-option>
               ${this.developmentMode
-                ? html`<sl-option value="0">Debug</sl-option>`
+                ? html`<wa-option value="0">Debug</wa-option>`
                 : nothing
               }
-            </sl-select>
-            <sl-select
+            </wa-select>
+            <wa-select
               class="source"
               clearable
               hoist
@@ -182,17 +179,17 @@ export class LogInspector extends LitElement {
               multiple
               part="source"
               placeholder="All"
-              value=${this.displaySources.join(' ')}
-              @sl-change=${this.setdisplaySources}
+              .value=${this.displaySources}
+              @change=${this.setdisplaySources}
             >
               ${ repeat(this.#logSources, (source) => `filter-log-source-${source}`, (source, _idx) => html`
-                  <sl-option value=${source.replace(/ /g, '_')}>${source}</sl-option>
+                  <wa-option value=${source.replace(/ /g, '_')}>${source}</wa-option>
                 `)
               }
-            </sl-select>
+            </wa-select>
           </div>
-        </sl-details>
-        <sl-divider part="divider"></sl-divider>
+        </wa-details>
+        <wa-divider class="divider" part="divider"></wa-divider>
         <div class="nav" part="nav">
           <div class="range" part="range">
             ${(this.pageNumber - 1)*this.eventsPerPage + 1}
@@ -202,43 +199,55 @@ export class LogInspector extends LitElement {
             ${this.filteredEvents.length}
           </div>
           <div class="arrows" part="arrows">
-            <sl-tooltip content="Previous page">
-              <sl-icon-button
-                name="chevron-left"
-                ?disabled=${this.pageNumber <= 1}
-                part="previous-page"
-                @click=${() => {
-                  this.pageNumber--
-                }}
-              ></sl-icon-button>
-            </sl-tooltip>
-            <sl-tooltip content="Next page">
-              <sl-icon-button
-                name="chevron-right"
-                ?disabled=${this.pageNumber*this.eventsPerPage >= this.filteredEvents.length}
-                part="next-page"
-                @click=${() => {
-                  this.pageNumber++
-                }}
-              ></sl-icon-button>
-            </sl-tooltip>
+            <wa-button
+              appearance="plain"
+              id="previous-page-button"
+              ?disabled=${this.pageNumber <= 1}
+              part="previous-page"
+              size="small"
+              @click=${() => {
+                this.pageNumber--
+              }}
+            >
+              <wa-icon name="chevron-left"></wa-icon>
+            </wa-button>
+            <wa-tooltip for="previous-page-button">Previous page</wa-tooltip>
+            <wa-button
+              appearance="plain"
+              id="next-page-button"
+              ?disabled=${this.pageNumber*this.eventsPerPage >= this.filteredEvents.length}
+              part="next-page"
+              size="small"
+              @click=${() => {
+                this.pageNumber++
+              }}
+            >
+              <wa-icon name="chevron-right"></wa-icon>
+            </wa-button>
+            <wa-tooltip for="next-page-button">Next page</wa-tooltip>
           </div>
           <div class="order" part="order">
             Order:
-            <sl-tooltip
-              content=${this.#eventOrder === -1 ? 'Oldest to newest' : 'Newest to oldest'}
+            <wa-button
+              appearance="plain"
+              id="order-button"
+              size="small"
+              @click=${() => {
+                this.#eventOrder = this.#eventOrder === -1 ? 1 : -1
+                this.filterEvents()
+              }}
             >
-              <sl-icon-button
-                name="arrow-${this.#eventOrder === 1 ? 'up' : 'down'}"
-                @click=${() => {
-                  this.#eventOrder = this.#eventOrder === -1 ? 1 : -1
-                  this.filterEvents()
-                }}
-              ></sl-icon-button>
-            </sl-tooltip>
+              <wa-icon
+                name=${this.#eventOrder === -1 ? 'arrow-down' : 'arrow-up'}
+              ></wa-icon>
+            </wa-button>
+            <wa-tooltip for="order-button">
+              ${this.#eventOrder === -1 ? 'Oldest to newest' : 'Newest to oldest'}
+            </wa-tooltip>
           </div>
         </div>
-        <ul class="log" part="log">
+        <wa-scroller class="scroller" orientation="vertical" part="scroller">
+          <ul class="log" part="log">
             ${ repeat(this.pageEvents, (event) => `log-event-${event.id}`, (event, _idx) => {
               return html`
                 <li
@@ -249,17 +258,21 @@ export class LogInspector extends LitElement {
                 >
                   <div class="meta" part="meta">
                     <div class="icon" part="icon">
-                      <sl-tooltip content="Priority: ${this.labelForLevel(event.level)}">
-                        <sl-icon
-                          name=${this.iconForLevel(event.level)}
-                          style="color: var(--icon-${this.colorForLevel(event.level)})"
-                        ></sl-icon>
-                      </sl-tooltip>
+                      <wa-icon
+                        id=${`icon-${event.id}`}
+                        name=${this.iconForLevel(event.level)}
+                        style="color: var(--icon-${this.colorForLevel(event.level)})"
+                        variant="${this.variantForLevel(event.level)}"
+                      ></wa-icon>
+                      <wa-tooltip for="${`icon-${event.id}`}">
+                        Priority: ${this.labelForLevel(event.level)}
+                      </wa-tooltip>
                     </div>
                     <div class="scope" part="scope">
-                      <sl-tooltip content="Scope: ${event.scope}">
-                        <div class="oneliner">${event.scope}</div>
-                      </sl-tooltip>
+                      <div class="oneliner" id="${`scope-${event.id}`}">${event.scope}</div>
+                      <wa-tooltip for="${`scope-${event.id}`}">
+                        Scope: ${event.scope}
+                      </wa-tooltip>
                     </div>
                   </div>
                   <div class="message" part="message">
@@ -289,9 +302,9 @@ export class LogInspector extends LitElement {
                   </div>
                 </li>
               `
-            })
-          }
-        </ul>
+            })}
+          </ul>
+        </wa-scroller>
       </div>
     `
   }
@@ -302,11 +315,11 @@ export class LogInspector extends LitElement {
    */
   private _applyMode (mode: 'dark' | 'light') {
     if (mode === 'dark') {
-      this.classList.add('sl-theme-dark')
+      this.classList.add('wa-dark')
       this.#theme = 'dark'
       this.requestUpdate()
     } else {
-      this.classList.remove('sl-theme-dark')
+      this.classList.remove('wa-dark')
       this.#theme = 'light'
       this.requestUpdate()
     }
@@ -456,6 +469,19 @@ export class LogInspector extends LitElement {
     }
   }
 
+  variantForLevel (level: number) {
+    switch (level) {
+      case 1:
+        return 'light'
+      case 2:
+        return 'regular'
+      case 3:
+        return 'solid'
+      default:
+        return 'light'
+    }
+  }
+
   static styles = css`
     /* Global element styles */
     :host {
@@ -520,13 +546,15 @@ export class LogInspector extends LitElement {
     .component {
       background-color: var(--background-default);
       color: var(--text-default);
+      display: flex;
+      flex-direction: column;
       max-height: 100%;
       overflow: hidden;
     }
     .level {
       min-width: 16em;
     }
-    sl-select::part(form-control-label) {
+    wa-select::part(form-control-label) {
       font-size: 0.9em;
       color: var(--text-faint);
     }
@@ -534,14 +562,19 @@ export class LogInspector extends LitElement {
       display: flex;
       gap: 1em;
     }
+    .divider {
+      margin-bottom: 0.25rem;
+    }
     .nav {
-      display: flex;
-      flex-wrap: nowrap;
       align-items: center;
+      color: var(--text-minor);
+      display: flex;
+      flex: 0 0 2.75rem;
+      flex-wrap: nowrap;
+      font-size: 0.9em;
       height: 2em;
       line-height: 2em;
-      font-size: 0.9em;
-      color: var(--text-minor);
+      padding-bottom: 0.25rem;
     }
       .nav .range {
         margin-left: 0.25em;
@@ -552,14 +585,18 @@ export class LogInspector extends LitElement {
         gap: 0.5em;
       }
       .nav .order {
+        align-items: center;
         display: flex;
         gap: 0.5em;
         margin-left: auto;
       }
+    .scroller {
+      flex: 1;
+      overflow: hidden;
+    }
     .log {
-      padding: 0;
-      height: 100%;
-      overflow: auto;
+      margin: 0;
+      padding: 0 0.5em 0 0;
     }
     .row {
       display: flex;
@@ -587,7 +624,7 @@ export class LogInspector extends LitElement {
       .icon {
         flex: 0;
       }
-        .icon sl-icon {
+        .icon wa-icon {
           position: relative;
           top: 0.125em;
         }

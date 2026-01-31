@@ -44,7 +44,7 @@
     "vite": "^6.2.0"
   },
   "dependencies": {
-    "@shoelace-style/shoelace": "^2.20.1",
+    "@awesome.me/webawesome": "^3.1.0",
     "lit": "^3.2.1"
   },
   "repository": {
@@ -54,5 +54,6 @@
   "bugs": {
     "url": "https://github.com/sam-19/scoped-event-log/issues"
   },
-  "homepage": "https://github.com/sam-19/scoped-event-log#readme"
+  "homepage": "https://github.com/sam-19/scoped-event-log#readme",
+  "customElements": "custom-elements.json"
 }
