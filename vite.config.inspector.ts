@@ -22,11 +22,23 @@ export default defineConfig({
     },
     esbuild: {
         keepNames: true,
+        tsconfigRaw: {
+            compilerOptions: {
+                experimentalDecorators: true,
+                useDefineForClassFields: false,
+            }
+        }
     },
     optimizeDeps: {
         esbuildOptions: {
             target: 'esnext',
-        },
+            tsconfigRaw: {
+                compilerOptions: {
+                    experimentalDecorators: true,
+                    useDefineForClassFields: false,
+                }
+            }
+        }
     },
     plugins: [
     ],
