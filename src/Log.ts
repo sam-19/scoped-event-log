@@ -6,6 +6,21 @@
  */
 
 /**
+ * Additional context for a log event.
+ * @property announce - Should this event be announced to the user (e.g. via a toast notification)?
+ * @property extra - Any extra properties that don't fit into the predefined context.
+ * @property sensitive - Is this event sensitive and should be removed from logs or UI?
+ */
+export type LogEventContext = {
+    /** Should this event be announced to the user (e.g. via a toast notification)? */
+    announce?: boolean
+    /** Any extra properties that don't fit into the predefined context. */
+    extra?: unknown
+    /** Is this event sensitive and should be removed from logs or UI? */
+    sensitive?: boolean
+}
+
+/**
  * A log event listener method.
  * @param level - Logging level of the event.
  * @param event - The logging event itself.
@@ -133,8 +148,7 @@ export class Log {
         level: keyof typeof Log.LEVELS,
         message: string | string[],
         scope: string,
-        sensitive = false,
-        extra?: unknown
+        context: LogEventContext = {}
     ) {
         // @ts-expect-error: Check if we are in worker scope.
         if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope &&
@@ -143,10 +157,10 @@ export class Log {
         ) {
             postMessage({
                 action: 'log',
-                level: level,
-                message: message,
-                scope: scope,
-                extra: extra,
+                level,
+                message,
+                scope,
+                context,
             })
             // Message will be handled in the main document's Log.
             return
@@ -155,7 +169,7 @@ export class Log {
             // Not a valid logging level
             console.warn(`Rejected an event with an invalid log level: (${level}) ${message}`)
         } else {
-            const logEvent = new LogEvent(Log.LEVELS[level], message, scope, sensitive, extra)
+            const logEvent = new LogEvent(Log.LEVELS[level], message, scope, context)
             if (Log.LEVELS[level] >= Log.printThreshold) {
                 Log.print(logEvent)
             }
@@ -243,8 +257,8 @@ export class Log {
      * @param scope - Scope of the event.
      * @param sensitive - Whether the event contains sensitive information (default false).
      */
-    static debug (message: string | string[], scope: string, sensitive?: boolean) {
-        Log.add("DEBUG", message, scope, sensitive)
+    static debug (message: string | string[], scope: string, context: LogEventContext = {}) {
+        Log.add("DEBUG", message, scope, context)
     }
 
     /**
@@ -252,16 +266,17 @@ export class Log {
      * @param message - Message as a string or array of strings (where each item is its own line).
      * @param scope - Scope of the event.
      * @param error - Optional Error object.
-     * @param sensitive - Whether the event contains sensitive information (default false).
+     * @param context - Additional context for the event.
      */
-    static error (message: string | string[], scope: string, error?: Error, sensitive?: boolean) {
+    static error (message: string | string[], scope: string, error?: Error, context: LogEventContext = {}) {
         // TODO: This sometimes gives unexpected results when the origin of the error is traced
         //       back to this line. Alternative ways to find the call stack without throwing
         //       an error?
         error = error || new Error(Array.isArray(message) ? message.join() : message)
         let stack = (error.stack || '').split(/\r?\n/g)
         stack = stack.length > 1 ? stack.slice(1) : stack
-        Log.add("ERROR", message, scope, sensitive, stack)
+        Object.assign(context, { extra: { error, stack } })
+        Log.add("ERROR", message, scope, context)
     }
 
     /**
@@ -351,10 +366,10 @@ export class Log {
      * Add a message at info level to the log.
      * @param message - Message as a string or array of strings (where each item is its own line).
      * @param scope - Optional scope of the event.
-     * @param sensitive - Whether the event contains sensitive information (default false).
+     * @param context - Additional context for the event.
      */
-    static info (message: string | string[], scope: string, sensitive?: boolean) {
-        Log.add("INFO", message, scope, sensitive)
+    static info (message: string | string[], scope: string, context: LogEventContext = {}) {
+        Log.add("INFO", message, scope, context)
     }
 
     /**
@@ -618,10 +633,10 @@ export class Log {
      * Add a message at warning level to the log.
      * @param message - Message as a string or array of strings (where each item is its own line).
      * @param scope - Scope of the event.
-     * @param sensitive - Whether the event contains sensitive information (default false).
+     * @param context - Additional context for the event.
      */
-    static warn (message: string | string[], scope: string, sensitive?: boolean) {
-        Log.add("WARN", message, scope, sensitive)
+    static warn (message: string | string[], scope: string, context: LogEventContext = {}) {
+        Log.add("WARN", message, scope, context)
     }
 }
 
@@ -631,8 +646,8 @@ export class Log {
  * A single event in the log.
  */
 class LogEvent {
-    /** Any extra properties. */
-    #extra: unknown
+    /** Additional context for the event. */
+    #context: LogEventContext
     /** Event priority level. */
     #level: number
     /** Message lines as a string or an array of strings. */
@@ -641,8 +656,6 @@ class LogEvent {
     #printed: boolean
     /** Scope of the event. */
     #scope: string
-    /** Is the message content of this event sensitive? */
-    #sensitive: boolean
     /** Timestamp of logging the event. */
     #time: LogTimestamp
 
@@ -651,23 +664,31 @@ class LogEvent {
      * @param level - Event priority level.
      * @param message - Message lines as a string or an array of strings.
      * @param scope - Scope of the event.
-     * @param sensitive - Is the message content sensitive (default false).
-     * @param extra - Any extra properties.
+     * @param context - Additional context for the event.
      */
-    constructor (level: number, message: string | string[], scope: string, sensitive?: boolean, extra?: unknown) {
-        this.#extra = extra
+    constructor (level: number, message: string | string[], scope: string, context: LogEventContext = {}) {
         this.#level = level
         this.#message = message
         this.#printed = false
         this.#scope = scope
-        this.#sensitive = sensitive || false
+        this.#context = context || {}
         this.#time = new LogTimestamp()
     }
 
     // Properties are immutable after initiation
+    /** Should this event be announced to the user (e.g. via a toast notification)? */
+    get announce () {
+        // For backwards compatibility, we also allow announcement to be accessed directly from the event object.
+        return this.#context.announce || false
+    }
+    /** Additional context for the event. */
+    get context () {
+        return this.#context
+    }
     /** Possible extra properties. */
     get extra () {
-        return this.#extra
+        // For backwards compatibility, we also allow extra properties to be accessed directly from the event object.
+        return this.#context.extra || {}
     }
     /** Event priority level. */
     get level () {
@@ -675,7 +696,7 @@ class LogEvent {
     }
     /** Message lines as a string or an array of strings. */
     get message () {
-        return this.#sensitive ? '### SENSITIVE INFO REDACTED ###' : this.#message
+        return this.#context.sensitive ? '### SENSITIVE INFO REDACTED ###' : this.#message
     }
     /** Has this event's message already been printed to console. */
     get printed () {
@@ -687,7 +708,8 @@ class LogEvent {
     }
     /** Is the message content of this event sensitive? */
     get sensitive () {
-        return this.#sensitive
+        // For backwards compatibility, we also allow sensitivity to be accessed directly from the event object.
+        return this.#context.sensitive || false
     }
     /** Timestamp of logging the event. */
     get time () {

@@ -3,6 +3,7 @@
   "version": "3.0.0",
   "description": "Global event log with scoped entries.",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "files": [
     "dist/*",
