@@ -129,6 +129,19 @@ export class Log {
     }
     /** Events at and above this level will be printed to console. */
     protected static printThreshold: number = 1
+    /**
+     * Events at and above this level will be forwarded from worker scopes to the parent
+     * thread via `postMessage`. Independent of {@link printThreshold} so the parent thread
+     * can capture more events (e.g. DEBUG for a log inspector) than it prints to console, or
+     * fewer (e.g. WARN to suppress noisy worker chatter that the parent's console-print path
+     * would have shown).
+     *
+     * Default matches `printThreshold`'s initial value (INFO) — at this level workers drop
+     * DEBUG events before paying the cross-thread serialisation cost, while INFO/WARN/ERROR
+     * still reach the parent. Lower it (e.g. `'DEBUG'`) when something on the parent needs
+     * the full event stream; raise it to silence worker chatter further.
+     */
+    protected static workerForwardThreshold: number = 1
     protected static workers: Worker[] = []
 
     /**
@@ -155,6 +168,19 @@ export class Log {
             typeof postMessage !== 'undefined' &&
             !Log.separateWorkerScope
         ) {
+            // Drop events below the worker forward threshold BEFORE building a structured-clone
+            // payload and posting it to the parent thread. Without this gate, every Log.debug
+            // call inside a worker pays for a full cross-thread message round-trip even when
+            // the parent has no interest in the event. On hot paths (signal caching, montage
+            // builds) workers log hundreds of debug messages per second, which floods the
+            // parent's task queue with HandlePostMessage work.
+            if (
+                !Object.keys(Log.LEVELS).includes(level) ||
+                level === 'DISABLE' ||
+                Log.LEVELS[level] < Log.workerForwardThreshold
+            ) {
+                return
+            }
             postMessage({
                 action: 'log',
                 level,
@@ -439,19 +465,34 @@ export class Log {
 
     /**
      * Register a worker that is using the Log to relay messages to the main thread.
+     *
+     * Idempotent: calling this on a worker that's already registered is a no-op. Without this
+     * guard, a worker instance shared between multiple services (e.g. one pyodide worker
+     * handling montage commissions for every active montage) ends up with one listener per
+     * caller, so each `postMessage({ action: 'log', ... })` from the worker fires `Log.add`
+     * N times on the main thread.
+     *
      * @param worker - The worker to listen to and update print threshold changes to.
      */
     static registerWorker (worker: Worker) {
+        if (Log.workers.includes(worker)) {
+            return
+        }
         const messageHandler = (message: MessageEvent) => {
             const { data } = message
-            if (data.action === 'log' && data.level && data.message, data.scope) {
+            if (data.action === 'log' && data.level && data.message && data.scope) {
                 Log.add(data.level, data.message, data.scope, data.extra)
             } else if (data.action === 'terminate') {
                 // Removing the listener from a terminated worker may not be necessary, but at least this gives a way
                 // to do that.
                 worker.removeEventListener('message', messageHandler)
+                const idx = Log.workers.indexOf(worker)
+                if (idx >= 0) {
+                    Log.workers.splice(idx, 1)
+                }
             }
         }
+        Log.workers.push(worker)
         // Listen to log messages from the worker.
         worker.addEventListener('message', messageHandler)
     }
@@ -630,6 +671,34 @@ export class Log {
     }
 
     /**
+     * Set a new worker forward threshold level. Events at or above this level are forwarded
+     * from worker scopes to the parent thread via `postMessage`; events below it are dropped
+     * at the worker side without paying the cross-thread serialisation cost.
+     *
+     * The level is independent of {@link printThreshold} — a parent thread that wants to
+     * capture (but not print) more events than the console shows can lower the forward
+     * threshold below the print threshold; one that wants to silence worker chatter beyond
+     * the console-print path can raise it above.
+     *
+     * The setter posts a `'log-set-worker-forward-threshold'` message to each registered
+     * worker so the worker-side `Log` can mirror the value once a corresponding handler is
+     * wired up. Workers that haven't been updated to handle this action keep their initial
+     * threshold (INFO).
+     *
+     * @param level - Forward messages at or above this level from worker scopes to the parent.
+     */
+    static setWorkerForwardThreshold (level: LogLevel) {
+        if (Object.keys(Log.LEVELS).includes(level)) {
+            Log.workerForwardThreshold = Log.LEVELS[level]
+            for (const worker of Log.workers) {
+                worker.postMessage({ action: 'log-set-worker-forward-threshold', level: level })
+            }
+        } else {
+            console.warn(`Did not set invalid worker forward threshold ${level}`)
+        }
+    }
+
+    /**
      * Add a message at warning level to the log.
      * @param message - Message as a string or array of strings (where each item is its own line).
      * @param scope - Scope of the event.
@@ -688,7 +757,7 @@ class LogEvent {
     /** Possible extra properties. */
     get extra () {
         // For backwards compatibility, we also allow extra properties to be accessed directly from the event object.
-        return this.#context.extra || {}
+        return this.#context.extra || null
     }
     /** Event priority level. */
     get level () {

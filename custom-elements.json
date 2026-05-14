@@ -33,20 +33,511 @@
     {
       "kind": "javascript-module",
       "path": "dist/Log.js",
-      "declarations": [],
-      "exports": []
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "Log is a global scope object that can be used to store, examine and export messages and events.\n\nEvents must be classified at one of the accepted priority levels (`DEBUG`, `INFO`, `WARN`, and `ERROR`).\nA special level `DISABLE` is not meant for event classification; it can be used as a threshold to prevent any log\nmessages from being printed to the JavaScript console.\n\nSuggested classification scheme:\n- `DEBUG`: Lowest level events meant to track the normal operation of the application.\n- `INFO`: Used to notify that an important operation has completed, for example a module or resource finishes loading.\n- `WARN`: Used when an expected issue prevents the application from fully performing, but not altogether stopping, an operation.\n- `ERROR`: Used when an (usually) unexpected issue prevents the application from continuing an operation.\n\nSince the worker opertes in a different scope than the main document, the `Log` objects imported in workers are\nseparate objects. Since we don't want to maintain multiple instances of the object, all with their individual event\nbuffers, we can register a `worker` to automatically relay all events from its `Log` to the `Log` where it's\nregistered (i.e. the main document).",
+          "name": "Log",
+          "members": [
+            {
+              "kind": "field",
+              "name": "prevTimestamp",
+              "static": true,
+              "description": "Time stamp of the previous logged event.",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "add",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "description": "Event priority as key of Log.LEVELS."
+                },
+                {
+                  "name": "message",
+                  "description": "Message as a string or array of strings (where each item is its own line)."
+                },
+                {
+                  "name": "scope",
+                  "description": "Scope of the event."
+                },
+                {
+                  "name": "context",
+                  "default": "{}"
+                },
+                {
+                  "description": "Whether the event contains sensitive information (default false).",
+                  "name": "sensitive"
+                }
+              ],
+              "description": "Add a new event to the log at the given level."
+            },
+            {
+              "kind": "method",
+              "name": "addEventListener",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "description": "Log level or array of levels to listen to."
+                },
+                {
+                  "name": "listener",
+                  "description": "Method to call when a listened event occurs."
+                },
+                {
+                  "name": "owner",
+                  "description": "Optional identifier for the owner of the listener (for mass removal of registered listeners)."
+                },
+                {
+                  "name": "singleEvent",
+                  "default": "false",
+                  "description": "Only call once (on the next event) and then remove the listener (default false)."
+                }
+              ],
+              "description": "Add a listener for events of each given logging `level`."
+            },
+            {
+              "kind": "method",
+              "name": "callEventListeners",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "description": "Log level of the event."
+                },
+                {
+                  "name": "event",
+                  "description": "The actual event."
+                }
+              ],
+              "description": "Call all listeners for the given logging `level`."
+            },
+            {
+              "kind": "method",
+              "name": "clear",
+              "static": true,
+              "description": "Remove all events from the log."
+            },
+            {
+              "kind": "method",
+              "name": "debug",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "message",
+                  "description": "Message as a string or array of strings (where each item is its own line)."
+                },
+                {
+                  "name": "scope",
+                  "description": "Scope of the event."
+                },
+                {
+                  "name": "context",
+                  "default": "{}"
+                },
+                {
+                  "description": "Whether the event contains sensitive information (default false).",
+                  "name": "sensitive"
+                }
+              ],
+              "description": "Add a message at debug level to the log."
+            },
+            {
+              "kind": "method",
+              "name": "error",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "message",
+                  "description": "Message as a string or array of strings (where each item is its own line)."
+                },
+                {
+                  "name": "scope",
+                  "description": "Scope of the event."
+                },
+                {
+                  "name": "error",
+                  "description": "Optional Error object."
+                },
+                {
+                  "name": "context",
+                  "default": "{}",
+                  "description": "Additional context for the event."
+                }
+              ],
+              "description": "Add a message at error level to the log."
+            },
+            {
+              "kind": "method",
+              "name": "exportToJson",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "description": "Optional priority level to filter the events by, will return all events if left empty."
+                }
+              ],
+              "description": "Export stored log events into JSON.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getAllEvents",
+              "static": true,
+              "description": "Get all logged events.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getAllEventsAtLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "description": "Level of events to return."
+                }
+              ],
+              "description": "Return all log events at the given level.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getAllEventsAtOrAboveLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "description": "Minimum level of events to return."
+                }
+              ],
+              "description": "Return all log events at or above the given level.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getAllEventsAtOrBelowLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "description": "Maximum level of events to return."
+                }
+              ],
+              "description": "Return all log events at or below the given level.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getPrintThreshold",
+              "static": true,
+              "description": "Get current event printing threshold."
+            },
+            {
+              "kind": "method",
+              "name": "getScopeEvents",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "scope",
+                  "description": "Scope to check."
+                }
+              ],
+              "description": "Get all the events added to the given `scope`.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "info",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "message",
+                  "description": "Message as a string or array of strings (where each item is its own line)."
+                },
+                {
+                  "name": "scope",
+                  "description": "Optional scope of the event."
+                },
+                {
+                  "name": "context",
+                  "default": "{}",
+                  "description": "Additional context for the event."
+                }
+              ],
+              "description": "Add a message at info level to the log."
+            },
+            {
+              "kind": "method",
+              "name": "print",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "logEvent",
+                  "description": "The event to print."
+                }
+              ],
+              "description": "Print a log event's message to console."
+            },
+            {
+              "kind": "method",
+              "name": "registerWorker",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "worker",
+                  "description": "The worker to listen to and update print threshold changes to."
+                }
+              ],
+              "description": "Register a worker that is using the Log to relay messages to the main thread.\n\nIdempotent: calling this on a worker that's already registered is a no-op. Without this\nguard, a worker instance shared between multiple services (e.g. one pyodide worker\nhandling montage commissions for every active montage) ends up with one listener per\ncaller, so each `postMessage({ action: 'log', ... })` from the worker fires `Log.add`\nN times on the main thread."
+            },
+            {
+              "kind": "method",
+              "name": "removeAllEventListeners",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "owner",
+                  "description": "Optional owner to remove listeners from."
+                }
+              ],
+              "description": "Remove all event listeners. If `owner` is given, only event listeners from that owner are removed, otherwise\nevent listeners from all owners are removed (i.e. all event listeners).",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "removeEventListeners",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "description": "Level or array of levels to match."
+                },
+                {
+                  "name": "listener",
+                  "description": "The listener to remove."
+                },
+                {
+                  "name": "owner",
+                  "description": "Optional name of the owner to match."
+                }
+              ],
+              "description": "Remove a listener that matches the given `level` (or levels). A given `owner` name is also required to match,\nan empty owner will match listeners from named and unnammed owners.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "removeEventsAtLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "description": "Level at which events will be removed."
+                }
+              ],
+              "description": "Remove all events _at_ the given priority `level` from the log."
+            },
+            {
+              "kind": "method",
+              "name": "removeEventsBelowLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "description": "Level below which events will be removed (events at the level will remain)."
+                }
+              ],
+              "description": "Remove all events _below_ the given priority `level` from the log."
+            },
+            {
+              "kind": "method",
+              "name": "removeScopeEvents",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "scope",
+                  "description": "The scope of the events."
+                }
+              ],
+              "description": "Remove all events of a given `scope` from the log."
+            },
+            {
+              "kind": "method",
+              "name": "removeScopeEventsAtLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "scope",
+                  "description": "Scope of the events."
+                },
+                {
+                  "name": "level",
+                  "description": "Level at which events will be removed."
+                }
+              ],
+              "description": "Remove events _at_ the given priority `level` in the given `scope` from the log."
+            },
+            {
+              "kind": "method",
+              "name": "removeScopeEventsBelowLevel",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "scope",
+                  "description": "Scope of the events."
+                },
+                {
+                  "name": "level",
+                  "description": "Level below which events will be removed (events at the level will remain)."
+                }
+              ],
+              "description": "Remove all events _below_ the given priority `level` in the given `scope` from the log."
+            },
+            {
+              "kind": "method",
+              "name": "setPrintThreshold",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "description": "Print messages at or above this level to console."
+                }
+              ],
+              "description": "Set a new printing threshold level."
+            },
+            {
+              "kind": "method",
+              "name": "setWorkerForwardThreshold",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "description": "Forward messages at or above this level from worker scopes to the parent."
+                }
+              ],
+              "description": "Set a new worker forward threshold level. Events at or above this level are forwarded\nfrom worker scopes to the parent thread via `postMessage`; events below it are dropped\nat the worker side without paying the cross-thread serialisation cost.\n\nThe level is independent of printThreshold — a parent thread that wants to\ncapture (but not print) more events than the console shows can lower the forward\nthreshold below the print threshold; one that wants to silence worker chatter beyond\nthe console-print path can raise it above.\n\nThe setter posts a `'log-set-worker-forward-threshold'` message to each registered\nworker so the worker-side `Log` can mirror the value once a corresponding handler is\nwired up. Workers that haven't been updated to handle this action keep their initial\nthreshold (INFO)."
+            },
+            {
+              "kind": "method",
+              "name": "warn",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "message",
+                  "description": "Message as a string or array of strings (where each item is its own line)."
+                },
+                {
+                  "name": "scope",
+                  "description": "Scope of the event."
+                },
+                {
+                  "name": "context",
+                  "default": "{}",
+                  "description": "Additional context for the event."
+                }
+              ],
+              "description": "Add a message at warning level to the log."
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "Log",
+          "declaration": {
+            "name": "Log",
+            "module": "dist/Log.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "Log",
+            "module": "dist/Log.js"
+          }
+        }
+      ]
     },
     {
       "kind": "javascript-module",
       "path": "dist/LogInspector.js",
-      "declarations": [],
-      "exports": []
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "LogInspector",
+          "default": "class LogInspector extends LitElement { /** Ordering if log events. * - 1 is oldest to newest. * - -1 is newest to oldest. */ #eventOrder; /** Info open status. */ #infoOpen; /** List of log events in the inspector. */ #logEvents; /** List of source for which log events are available. */ #logSources; /** Current theme. */ #theme; /** * Crate a new log inspector element. * This will automatically add event listeners to the log instance. * @param log The log instance to use. * @param developmentMode Is the app in development mode? * @param eventsPerPage The number of events to show per page. * @param displayPriorities The priority levels to filter. * @param displaySources The sources to filter. * @param pageNumber The current page number. */ constructor() { super(); /** Ordering if log events. * - 1 is oldest to newest. * - -1 is newest to oldest. */ this.#eventOrder = 1; /** Info open status. */ this.#infoOpen = {}; /** List of log events in the inspector. */ this.#logEvents = []; /** List of source for which log events are available. */ this.#logSources = []; /** Current theme. */ this.#theme = 'light'; /** * The log events to display. */ this.filteredEvents = []; /** * Is the app in production mode? * - `development-mode` as an attribute. * - `developmentMode` as a property. * @default false */ this.developmentMode = false; /** * Displayed priority levels. Empty means all priorities. * - `display-priorities` as an attribute. * - `displayPriorities` as a property. * @default [] (all priorities) */ this.displayPriorities = []; /** * Displayed sources. Empty means all sources are displayed. * - `display-sources` as an attribute. * - `displaySources` as a property. * @default [] (all sources) */ this.displaySources = []; /** * The number of events to show per page. * - `events-per-page` as an attribute. * - `eventsPerPage` as a property. * @default 25 */ this.eventsPerPage = 25; /** * Override the application mode. * @default 'system' */ this.mode = 'system'; /** * The current page number. * - `page-number` as an attribute. * - `pageNumber` as a property. * @default 1 */ this.pageNumber = 1; /** * The log instance to use. * - `log` as an attribute. * - `useLog` as a property. * @default Log (global Log instance) */ this.useLog = Log; const eventLevels = ['ERROR', 'INFO', 'WARN']; // Apply theme and monitor for mode changes. if (this.mode === 'light') { this.classList.remove('wa-dark'); this.#theme = 'light'; } else if (this.mode === 'dark') { this.classList.add('wa-dark'); this.#theme = 'dark'; } else { this._applyMode(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => { if (this.mode === 'system') { this._applyMode(event.matches ? 'dark' : 'light'); } }); } requestAnimationFrame(() => { // Attributes need time to be initialized. if (this.developmentMode) { eventLevels.push('DEBUG'); } this.useLog.addEventListener(eventLevels, _event => { this.refreshEvents(); }); this.refreshEvents(); }); } get pageEvents() { return this.filteredEvents.slice((this.pageNumber - 1) * this.eventsPerPage, this.pageNumber * this.eventsPerPage); } render() { return html ` <div class=\"component ${this.#theme}-mode wa-${this.#theme}\" part=\"component\"> <wa-details summary=\"Filters\"> <div class=\"option\" part=\"option\"> <wa-select class=\"level\" clearable hoist label=\"Priority\" multiple part=\"level\" placeholder=\"All\" .value=${this.displayPriorities.map((level) => level.toString())} @change=${this.setdisplayPriorities} > <wa-option value=\"3\">Error</wa-option> <wa-option value=\"2\">Warning</wa-option> <wa-option value=\"1\">Info</wa-option> ${this.developmentMode ? html `<wa-option value=\"0\">Debug</wa-option>` : nothing} </wa-select> <wa-select class=\"source\" clearable hoist label=\"Source\" multiple part=\"source\" placeholder=\"All\" .value=${this.displaySources} @change=${this.setdisplaySources} > ${repeat(this.#logSources, (source) => `filter-log-source-${source}`, (source, _idx) => html ` <wa-option value=${source.replace(/ /g, '_')}>${source}</wa-option> `)} </wa-select> </div> </wa-details> <wa-divider class=\"divider\" part=\"divider\"></wa-divider> <div class=\"nav\" part=\"nav\"> <div class=\"range\" part=\"range\"> ${(this.pageNumber - 1) * this.eventsPerPage + 1} - ${Math.min(this.pageNumber * this.eventsPerPage, this.filteredEvents.length)} / ${this.filteredEvents.length} </div> <div class=\"arrows\" part=\"arrows\"> <wa-button appearance=\"plain\" id=\"previous-page-button\" ?disabled=${this.pageNumber <= 1} part=\"previous-page\" size=\"small\" @click=${() => { this.pageNumber--; }} > ${ICON_CHEVRON_LEFT} </wa-button> <wa-tooltip for=\"previous-page-button\">Previous page</wa-tooltip> <wa-button appearance=\"plain\" id=\"next-page-button\" ?disabled=${this.pageNumber * this.eventsPerPage >= this.filteredEvents.length} part=\"next-page\" size=\"small\" @click=${() => { this.pageNumber++; }} > ${ICON_CHEVRON_RIGHT} </wa-button> <wa-tooltip for=\"next-page-button\">Next page</wa-tooltip> </div> <div class=\"order\" part=\"order\"> Order: <wa-button appearance=\"plain\" id=\"order-button\" size=\"small\" @click=${() => { this.#eventOrder = this.#eventOrder === -1 ? 1 : -1; this.filterEvents(); }} > ${this.#eventOrder === -1 ? ICON_ARROW_DOWN : ICON_ARROW_UP} </wa-button> <wa-tooltip for=\"order-button\"> ${this.#eventOrder === -1 ? 'Oldest to newest' : 'Newest to oldest'} </wa-tooltip> </div> </div> <wa-scroller class=\"scroller\" orientation=\"vertical\" part=\"scroller\"> <ul class=\"log\" part=\"log\"> ${repeat(this.pageEvents, (event) => `log-event-${event.id}`, (event, _idx) => { return html ` <li class=\"row${event.expanded ? ' expanded' : ''}\" part=\"row\" style=\"border-color: var(--border-${this.colorForLevel(event.level)})\" @click=${this.toggleExpand(event)} > <div class=\"meta\" part=\"meta\"> <div class=\"icon\" part=\"icon\"> ${renderLevelIcon(`icon-${event.id}`, this.colorForLevel(event.level), event.level)} <wa-tooltip for=\"${`icon-${event.id}`}\"> Priority: ${this.labelForLevel(event.level)} </wa-tooltip> </div> <div class=\"scope\" part=\"scope\"> <div class=\"oneliner\" id=\"${`scope-${event.id}`}\">${event.scope}</div> <wa-tooltip for=\"${`scope-${event.id}`}\"> Scope: ${event.scope} </wa-tooltip> </div> </div> <div class=\"message\" part=\"message\"> <span class=\"${event.expanded ? '' : 'oneliner'}\">${Array.isArray(event.message) ? event.message.join('\\n') : event.message}</span> <span class=\"time\" title=\"Timestamp: ${event.time.date.toLocaleString()}\"> ${event.time.date.getHours()}:${event.time.date.getMinutes().toString().padStart(2, '0')}:${event.time.date.getSeconds().toString().padStart(2, '0')} </span> ${event.expanded && event.extra ? html `<hr style=\"border-color: var(--border-${this.colorForLevel(event.level)})\" />` : ''} ${event.expanded && event.extra ? repeat(Array.isArray(event.extra) ? event.extra : [event.extra], (_extra) => `log-event-${event.id}-extra`, (extra, _idy) => { return html `<pre>${extra}</pre>`; }) : ''} </div> </li> `; })} </ul> </wa-scroller> </div> `; } /** * Apply the selected mode to the component. * @param mode The mode to apply, either 'dark' or 'light'. */ _applyMode(mode) { if (mode === 'dark') { this.classList.add('wa-dark'); this.#theme = 'dark'; this.requestUpdate(); } else { this.classList.remove('wa-dark'); this.#theme = 'light'; this.requestUpdate(); } } /** * Create an identifier that is unique among the identifiers created with this method. * @returns Unique identifier as a string. */ _createUniqueId() { let retries = 100; while (retries > 0) { const id = (Date.now() + Math.random()).toString(36); if (!USED_IDS.has(id)) { USED_IDS.add(id); return id; } retries--; } const errorId = `id-error-${USED_IDS.size}`; USED_IDS.add(errorId); return errorId; } /** * Get the color for a given level. * @param level The level of the event. * @returns The color as a string. */ colorForLevel(level) { switch (level) { case 1: return 'default'; case 2: return 'warning'; case 3: return 'error'; default: return 'minor'; } } /** * Filter the log events based on the selected filters. */ filterEvents() { this.filteredEvents = this.#logEvents.filter((event) => { if (this.displayPriorities.length && !this.displayPriorities.includes(event.level)) { return false; } if (this.displaySources.length && !this.displaySources.includes(event.scope.replace(/ /g, '_'))) { return false; } return true; }); this.filteredEvents.sort((a, b) => this.#eventOrder * b.time.date.valueOf() - this.#eventOrder * a.time.date.valueOf()); this.pageNumber = 1; } /** * Get the icon name for a given level. * @param level The level of the event. * @returns The icon name as a string. */ iconForLevel(level) { switch (level) { case 1: return 'info-circle'; case 2: return 'exclamation-triangle'; case 3: return 'x-octagon'; default: return 'bug'; } } /** * Get the label for a given level. * @param level The level of the event. * @returns The label as a string. */ labelForLevel(level) { switch (level) { case 1: return 'Info'; case 2: return 'Warning'; case 3: return 'Error'; default: return 'Debug'; } } /** * Refresh the log events and sources. */ refreshEvents() { this.#logEvents.length = 0; this.#logSources.length = 0; for (const ev of this.useLog.getAllEventsAtOrAboveLevel(this.developmentMode ? \"DEBUG\" : \"INFO\")) { this.#logEvents.push(Object.assign(ev, { id: this._createUniqueId(), expanded: false, })); if (!this.#logSources.includes(ev.scope)) { this.#logSources.push(ev.scope); } } this.#logSources.sort(); this.filterEvents(); } setdisplayPriorities(event) { this.displayPriorities = []; for (const level of event.target.value) { this.displayPriorities.push(parseInt(level)); } this.filterEvents(); } setdisplaySources(event) { this.displaySources = []; for (const source of event.target.value) { this.displaySources.push(source); } this.filterEvents(); } toggleExpand(logEvent) { // This has to return a function of we want to use the custom event. return (_event) => { logEvent.expanded = !logEvent.expanded; this.requestUpdate(); }; } toggleInfo(field, value) { if (value !== undefined) { this.#infoOpen[field] = value; } else if (!this.#infoOpen[field]) { // If false or doesn't exist yet. this.#infoOpen[field] = true; } else { this.#infoOpen[field] = false; } } variantForLevel(level) { switch (level) { case 1: return 'light'; case 2: return 'regular'; case 3: return 'solid'; default: return 'light'; } } static { this.styles = css ` /* Global element styles */ :host { font-family: sans-serif; } .dark-mode { --background-default: #111; --background-focus: #181818; --background-highlight: #222; --border-default: #888; --border-faint: #666; --border-minor: #444; --border-highlight: #36f; --border-warning: #d62; --border-error: #c00; --icon-default: #aaa; --icon-faint: #777; --icon-minor: #999; --icon-highlight: #248; --icon-warning: #d62; --icon-error: #c00; --text-default: #ccc; --text-faint: #999; --text-minor: #aaa; --text-highlight: #248; --text-warning: #d62; --text-error: #c00; } .light-mode { --background-default: #fff; --background-focus: #f8f8ff; --background-highlight: #f9f9f9; --border-default: #888; --border-faint: #ccc; --border-minor: #aaa; --border-highlight: #36f; --border-warning: #d62; --border-error: #c00; --icon-default: #333; --icon-faint: #999; --icon-minor: #666; --icon-highlight: #248; --icon-warning: #d62; --icon-error: #c00; --text-default: #333; --text-faint: #999; --text-minor: #666; --text-highlight: #248; --text-warning: #d62; --text-error: #c00; } /* General styles */ .hidden { display: none; } .oneliner { overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; } /* Component styles */ .component { background-color: var(--background-default); color: var(--text-default); display: flex; flex-direction: column; max-height: 100%; overflow: hidden; } .level { min-width: 16em; } wa-select::part(form-control-label) { font-size: 0.9em; color: var(--text-faint); } .option { display: flex; gap: 1em; } .divider { margin-bottom: 0.25rem; } .nav { align-items: center; color: var(--text-minor); display: flex; flex: 0 0 2.75rem; flex-wrap: nowrap; font-size: 0.9em; height: 2em; line-height: 2em; padding-bottom: 0.25rem; } .nav .range { margin-left: 0.25em; min-width: 7.5em; } .arrows { display: flex; gap: 0.5em; } .nav .order { align-items: center; display: flex; gap: 0.5em; margin-left: auto; } .scroller { flex: 1; overflow: hidden; } .log { margin: 0; padding: 0 0.5em 0 0; } .row { display: flex; flex-wrap: nowrap; height: 1.75em; border: 1px solid var(--border-default); border-radius: 0.25em; margin: 0.25em 0; padding: 0.5em; line-height: 1.75em; cursor: pointer; } .row.expanded { height: auto; } .row:hover { background-color: var(--background-highlight); } .meta { position: relative; flex: 0; display: flex; flex-wrap: nowrap; } .icon { display: flex; align-items: center; justify-content: center; } .scope { flex-shrink: 1; max-width: 10em; } .scope div { border-left: 1px solid var(--border-faint); border-right: 1px solid var(--border-faint); margin: 0 0.5em; padding: 0 0.5em; } .message { position: relative; flex: 1; padding-right: 0.25em; overflow: hidden; } .message span { display: inline-block; white-space: pre-line; max-width: calc(100% - 4.5em); } .message .time { position: absolute; top: 0; right: 0.5em; height: 100%; text-align: right; font-size: 0.9em; white-space: nowrap; color: var(--text-minor); } .message pre { white-space: pre-wrap; margin: 1em 0 0.25em 0; line-height: 1.5em; } .message hr { margin: 0.5em 0; border: none; border-top: 1px solid; } .source { flex: 1; } `; } }",
+          "description": "Log inspector element.\nThis component is used to display log events in a list format.\nIt allows filtering by priority and source, and supports pagination."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "LogInspector",
+          "declaration": {
+            "name": "LogInspector",
+            "module": "dist/LogInspector.js"
+          }
+        }
+      ]
     },
     {
       "kind": "javascript-module",
       "path": "dist/index.js",
       "declarations": [],
-      "exports": []
+      "exports": [
+        {
+          "kind": "js",
+          "name": "Log",
+          "declaration": {
+            "name": "Log",
+            "module": "dist/index.js"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "Log",
+            "module": "dist/index.js"
+          }
+        }
+      ]
     },
     {
       "kind": "javascript-module",
@@ -128,6 +619,17 @@
               "static": true,
               "default": "1",
               "description": "Events at and above this level will be printed to console."
+            },
+            {
+              "kind": "field",
+              "name": "workerForwardThreshold",
+              "type": {
+                "text": "number"
+              },
+              "privacy": "protected",
+              "static": true,
+              "default": "1",
+              "description": "Events at and above this level will be forwarded from worker scopes to the parent\nthread via `postMessage`. Independent of printThreshold so the parent thread\ncan capture more events (e.g. DEBUG for a log inspector) than it prints to console, or\nfewer (e.g. WARN to suppress noisy worker chatter that the parent's console-print path\nwould have shown).\n\nDefault matches `printThreshold`'s initial value (INFO) — at this level workers drop\nDEBUG events before paying the cross-thread serialisation cost, while INFO/WARN/ERROR\nstill reach the parent. Lower it (e.g. `'DEBUG'`) when something on the parent needs\nthe full event stream; raise it to silence worker chatter further."
             },
             {
               "kind": "field",
@@ -505,7 +1007,7 @@
                   "description": "The worker to listen to and update print threshold changes to."
                 }
               ],
-              "description": "Register a worker that is using the Log to relay messages to the main thread."
+              "description": "Register a worker that is using the Log to relay messages to the main thread.\n\nIdempotent: calling this on a worker that's already registered is a no-op. Without this\nguard, a worker instance shared between multiple services (e.g. one pyodide worker\nhandling montage commissions for every active montage) ends up with one listener per\ncaller, so each `postMessage({ action: 'log', ... })` from the worker fires `Log.add`\nN times on the main thread."
             },
             {
               "kind": "method",
@@ -666,6 +1168,21 @@
                 }
               ],
               "description": "Set a new printing threshold level."
+            },
+            {
+              "kind": "method",
+              "name": "setWorkerForwardThreshold",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "level",
+                  "type": {
+                    "text": "LogLevel"
+                  },
+                  "description": "Forward messages at or above this level from worker scopes to the parent."
+                }
+              ],
+              "description": "Set a new worker forward threshold level. Events at or above this level are forwarded\nfrom worker scopes to the parent thread via `postMessage`; events below it are dropped\nat the worker side without paying the cross-thread serialisation cost.\n\nThe level is independent of printThreshold — a parent thread that wants to\ncapture (but not print) more events than the console shows can lower the forward\nthreshold below the print threshold; one that wants to silence worker chatter beyond\nthe console-print path can raise it above.\n\nThe setter posts a `'log-set-worker-forward-threshold'` message to each registered\nworker so the worker-side `Log` can mirror the value once a corresponding handler is\nwired up. Workers that haven't been updated to handle this action keep their initial\nthreshold (INFO)."
             },
             {
               "kind": "method",
@@ -1024,7 +1541,7 @@
               "kind": "field",
               "name": "styles",
               "static": true,
-              "default": "css` /* Global element styles */ :host { font-family: sans-serif; } .dark-mode { --background-default: #111; --background-focus: #181818; --background-highlight: #222; --border-default: #888; --border-faint: #666; --border-minor: #444; --border-highlight: #36f; --border-warning: #d62; --border-error: #c00; --icon-default: #aaa; --icon-faint: #777; --icon-minor: #999; --icon-highlight: #248; --icon-warning: #d62; --icon-error: #c00; --text-default: #ccc; --text-faint: #999; --text-minor: #aaa; --text-highlight: #248; --text-warning: #d62; --text-error: #c00; } .light-mode { --background-default: #fff; --background-focus: #f8f8ff; --background-highlight: #f9f9f9; --border-default: #888; --border-faint: #ccc; --border-minor: #aaa; --border-highlight: #36f; --border-warning: #d62; --border-error: #c00; --icon-default: #333; --icon-faint: #999; --icon-minor: #666; --icon-highlight: #248; --icon-warning: #d62; --icon-error: #c00; --text-default: #333; --text-faint: #999; --text-minor: #666; --text-highlight: #248; --text-warning: #d62; --text-error: #c00; } /* General styles */ .hidden { display: none; } .oneliner { overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; } /* Component styles */ .component { background-color: var(--background-default); color: var(--text-default); display: flex; flex-direction: column; max-height: 100%; overflow: hidden; } .level { min-width: 16em; } wa-select::part(form-control-label) { font-size: 0.9em; color: var(--text-faint); } .option { display: flex; gap: 1em; } .divider { margin-bottom: 0.25rem; } .nav { align-items: center; color: var(--text-minor); display: flex; flex: 0 0 2.75rem; flex-wrap: nowrap; font-size: 0.9em; height: 2em; line-height: 2em; padding-bottom: 0.25rem; } .nav .range { margin-left: 0.25em; min-width: 7.5em; } .arrows { display: flex; gap: 0.5em; } .nav .order { align-items: center; display: flex; gap: 0.5em; margin-left: auto; } .scroller { flex: 1; overflow: hidden; } .log { margin: 0; padding: 0 0.5em 0 0; } .row { display: flex; flex-wrap: nowrap; height: 1.75em; border: 1px solid var(--border-default); border-radius: 0.25em; margin: 0.25em 0; padding: 0.5em; line-height: 1.75em; cursor: pointer; } .row.expanded { height: auto; } .row:hover { background-color: var(--background-highlight); } .meta { position: relative; flex: 0; display: flex; flex-wrap: nowrap; } .icon { flex: 0; } .icon wa-icon { position: relative; top: 0.125em; } .scope { flex-shrink: 1; max-width: 10em; } .scope div { border-left: 1px solid var(--border-faint); border-right: 1px solid var(--border-faint); margin: 0 0.5em; padding: 0 0.5em; } .message { position: relative; flex: 1; padding-right: 0.25em; overflow: hidden; } .message span { display: inline-block; white-space: pre-line; max-width: calc(100% - 4.5em); } .message .time { position: absolute; top: 0; right: 0.5em; height: 100%; text-align: right; font-size: 0.9em; white-space: nowrap; color: var(--text-minor); } .message pre { white-space: pre-wrap; margin: 1em 0 0.25em 0; line-height: 1.5em; } .message hr { margin: 0.5em 0; border: none; border-top: 1px solid; } .source { flex: 1; } `"
+              "default": "css` /* Global element styles */ :host { font-family: sans-serif; } .dark-mode { --background-default: #111; --background-focus: #181818; --background-highlight: #222; --border-default: #888; --border-faint: #666; --border-minor: #444; --border-highlight: #36f; --border-warning: #d62; --border-error: #c00; --icon-default: #aaa; --icon-faint: #777; --icon-minor: #999; --icon-highlight: #248; --icon-warning: #d62; --icon-error: #c00; --text-default: #ccc; --text-faint: #999; --text-minor: #aaa; --text-highlight: #248; --text-warning: #d62; --text-error: #c00; } .light-mode { --background-default: #fff; --background-focus: #f8f8ff; --background-highlight: #f9f9f9; --border-default: #888; --border-faint: #ccc; --border-minor: #aaa; --border-highlight: #36f; --border-warning: #d62; --border-error: #c00; --icon-default: #333; --icon-faint: #999; --icon-minor: #666; --icon-highlight: #248; --icon-warning: #d62; --icon-error: #c00; --text-default: #333; --text-faint: #999; --text-minor: #666; --text-highlight: #248; --text-warning: #d62; --text-error: #c00; } /* General styles */ .hidden { display: none; } .oneliner { overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; } /* Component styles */ .component { background-color: var(--background-default); color: var(--text-default); display: flex; flex-direction: column; max-height: 100%; overflow: hidden; } .level { min-width: 16em; } wa-select::part(form-control-label) { font-size: 0.9em; color: var(--text-faint); } .option { display: flex; gap: 1em; } .divider { margin-bottom: 0.25rem; } .nav { align-items: center; color: var(--text-minor); display: flex; flex: 0 0 2.75rem; flex-wrap: nowrap; font-size: 0.9em; height: 2em; line-height: 2em; padding-bottom: 0.25rem; } .nav .range { margin-left: 0.25em; min-width: 7.5em; } .arrows { display: flex; gap: 0.5em; } .nav .order { align-items: center; display: flex; gap: 0.5em; margin-left: auto; } .scroller { flex: 1; overflow: hidden; } .log { margin: 0; padding: 0 0.5em 0 0; } .row { display: flex; flex-wrap: nowrap; height: 1.75em; border: 1px solid var(--border-default); border-radius: 0.25em; margin: 0.25em 0; padding: 0.5em; line-height: 1.75em; cursor: pointer; } .row.expanded { height: auto; } .row:hover { background-color: var(--background-highlight); } .meta { position: relative; flex: 0; display: flex; flex-wrap: nowrap; } .icon { display: flex; align-items: center; justify-content: center; } .scope { flex-shrink: 1; max-width: 10em; } .scope div { border-left: 1px solid var(--border-faint); border-right: 1px solid var(--border-faint); margin: 0 0.5em; padding: 0 0.5em; } .message { position: relative; flex: 1; padding-right: 0.25em; overflow: hidden; } .message span { display: inline-block; white-space: pre-line; max-width: calc(100% - 4.5em); } .message .time { position: absolute; top: 0; right: 0.5em; height: 100%; text-align: right; font-size: 0.9em; white-space: nowrap; color: var(--text-minor); } .message pre { white-space: pre-wrap; margin: 1em 0 0.25em 0; line-height: 1.5em; } .message hr { margin: 0.5em 0; border: none; border-top: 1px solid; } .source { flex: 1; } `"
             }
           ],
           "superclass": {

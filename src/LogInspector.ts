@@ -9,12 +9,11 @@ import '@awesome.me/webawesome/dist/styles/themes/default.css'
 import '@awesome.me/webawesome/dist/components/button/button.js'
 import '@awesome.me/webawesome/dist/components/details/details.js'
 import '@awesome.me/webawesome/dist/components/divider/divider.js'
-import '@awesome.me/webawesome/dist/components/icon/icon.js'
 import '@awesome.me/webawesome/dist/components/option/option.js'
 import '@awesome.me/webawesome/dist/components/scroller/scroller.js'
 import '@awesome.me/webawesome/dist/components/select/select.js'
 import '@awesome.me/webawesome/dist/components/tooltip/tooltip.js'
-import { Log, type LogEventProps } from '.'
+import { Log, type LogEventProps } from './index.js'
 
 type LogEvent = LogEventProps & {
   id: string
@@ -22,6 +21,35 @@ type LogEvent = LogEventProps & {
 }
 
 const USED_IDS = new Set<string>()
+
+// Inline SVG icons, used in place of WebAwesome's `wa-icon` here so the inspector doesn't
+// depend on an icon library being registered in the host app (the previous build relied on
+// FontAwesome Pro, which requires a paid subscription). Sized via `1em` so they inherit the
+// surrounding button's font size; coloured via `currentColor` so theme styling propagates.
+const ICON_CHEVRON_LEFT = html`<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M15.5 19l-7-7 7-7 1.4 1.4L11.3 12l5.6 5.6z"/></svg>`
+const ICON_CHEVRON_RIGHT = html`<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M8.5 5l7 7-7 7-1.4-1.4L12.7 12 7.1 6.4z"/></svg>`
+const ICON_ARROW_DOWN = html`<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M11 4v12.2l-5.6-5.6L4 12l8 8 8-8-1.4-1.4-5.6 5.6V4z"/></svg>`
+const ICON_ARROW_UP = html`<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M11 20V7.8l-5.6 5.6L4 12l8-8 8 8-1.4 1.4L13 7.8V20z"/></svg>`
+
+// Per-log-level priority icons. Rendered next to each event row, coloured via `currentColor`
+// inherited from `style="color: var(--icon-<level>)"` on the wrapping <svg>. `id` is set on
+// each so the adjacent `<wa-tooltip for=...>` can target it.
+const renderLevelIcon = (id: string, color: string, level: number) => {
+    // INFO (level 1): circle with 'i' glyph.
+    if (level === 1) {
+        return html`<svg id=${id} viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" style="color: var(--icon-${color})" aria-hidden="true"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8zm-1-13h2v2h-2zm0 4h2v6h-2z"/></svg>`
+    }
+    // WARN (level 2): triangle with '!' glyph.
+    if (level === 2) {
+        return html`<svg id=${id} viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" style="color: var(--icon-${color})" aria-hidden="true"><path d="M12 5.99 19.53 19H4.47L12 5.99M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-6h-2v5h2v-5z"/></svg>`
+    }
+    // ERROR (level 3): octagon with 'x' glyph.
+    if (level === 3) {
+        return html`<svg id=${id} viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" style="color: var(--icon-${color})" aria-hidden="true"><path d="M7.86 2 2 7.86v8.28L7.86 22h8.28L22 16.14V7.86L16.14 2H7.86zm.83 2h6.62L20 8.69v6.62L15.31 20H8.69L4 15.31V8.69L8.69 4zm6.6 4L12 11.29 8.71 8 7.29 9.41 10.59 12.71 7.29 16 8.71 17.41 12 14.12 15.29 17.41 16.71 16 13.41 12.71 16.71 9.41 15.29 8z"/></svg>`
+    }
+    // DEBUG (level 0, default): bug glyph.
+    return html`<svg id=${id} viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" style="color: var(--icon-${color})" aria-hidden="true"><path d="M20 8h-2.81c-.45-.78-1.07-1.45-1.82-1.96L17 4.41 15.59 3l-2.17 2.17C13 5.06 12.5 5 12 5s-1 .06-1.42.17L8.41 3 7 4.41l1.62 1.63C7.88 6.55 7.26 7.22 6.81 8H4v2h2.09c-.05.33-.09.66-.09 1v1H4v2h2v1c0 .34.04.67.09 1H4v2h2.81c1.04 1.79 2.97 3 5.19 3s4.15-1.21 5.19-3H20v-2h-2.09c.05-.33.09-.66.09-1v-1h2v-2h-2v-1c0-.34-.04-.67-.09-1H20V8zm-6 8h-4v-2h4v2zm0-4h-4v-2h4v2z"/></svg>`
+}
 
 /**
  * Log inspector element.
@@ -209,7 +237,7 @@ export class LogInspector extends LitElement {
                 this.pageNumber--
               }}
             >
-              <wa-icon name="chevron-left"></wa-icon>
+              ${ICON_CHEVRON_LEFT}
             </wa-button>
             <wa-tooltip for="previous-page-button">Previous page</wa-tooltip>
             <wa-button
@@ -222,7 +250,7 @@ export class LogInspector extends LitElement {
                 this.pageNumber++
               }}
             >
-              <wa-icon name="chevron-right"></wa-icon>
+              ${ICON_CHEVRON_RIGHT}
             </wa-button>
             <wa-tooltip for="next-page-button">Next page</wa-tooltip>
           </div>
@@ -237,9 +265,7 @@ export class LogInspector extends LitElement {
                 this.filterEvents()
               }}
             >
-              <wa-icon
-                name=${this.#eventOrder === -1 ? 'arrow-down' : 'arrow-up'}
-              ></wa-icon>
+              ${this.#eventOrder === -1 ? ICON_ARROW_DOWN : ICON_ARROW_UP}
             </wa-button>
             <wa-tooltip for="order-button">
               ${this.#eventOrder === -1 ? 'Oldest to newest' : 'Newest to oldest'}
@@ -258,12 +284,7 @@ export class LogInspector extends LitElement {
                 >
                   <div class="meta" part="meta">
                     <div class="icon" part="icon">
-                      <wa-icon
-                        id=${`icon-${event.id}`}
-                        name=${this.iconForLevel(event.level)}
-                        style="color: var(--icon-${this.colorForLevel(event.level)})"
-                        variant="${this.variantForLevel(event.level)}"
-                      ></wa-icon>
+                      ${renderLevelIcon(`icon-${event.id}`, this.colorForLevel(event.level), event.level)}
                       <wa-tooltip for="${`icon-${event.id}`}">
                         Priority: ${this.labelForLevel(event.level)}
                       </wa-tooltip>
@@ -622,12 +643,10 @@ export class LogInspector extends LitElement {
         flex-wrap: nowrap;
       }
       .icon {
-        flex: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
-        .icon wa-icon {
-          position: relative;
-          top: 0.125em;
-        }
       .scope {
         flex-shrink: 1;
         max-width: 10em;

@@ -111,10 +111,10 @@ describe('Logging events', () => {
         expect(Log.getScopeEvents('Test add').length).toStrictEqual(0)
     })
     test('Sensitive events', () => {
-        Log.debug("Test debug sensitive", "Test sensitive", true)
-        Log.info("Test info sensitive", "Test sensitive", true)
-        Log.warn("Test warn sensitive", "Test sensitive", true)
-        Log.error("Test error sensitive", "Test sensitive", undefined, true)
+        Log.debug("Test debug sensitive", "Test sensitive", { sensitive: true })
+        Log.info("Test info sensitive", "Test sensitive", { sensitive: true })
+        Log.warn("Test warn sensitive", "Test sensitive", { sensitive: true })
+        Log.error("Test error sensitive", "Test sensitive", undefined, { sensitive: true })
         const scopeEvents = Log.getScopeEvents('Test sensitive')
         expect(scopeEvents[0].message).toStrictEqual('### SENSITIVE INFO REDACTED ###')
         expect(scopeEvents[1].message).toStrictEqual('### SENSITIVE INFO REDACTED ###')
@@ -174,7 +174,7 @@ describe("JSON export", () => {
     test('Export events to JSON', () => {
         Log.clear()
         Log.debug("Export debug", "Test export")
-        Log.info("Export info", "Test export", true)
+        Log.info("Export info", "Test export", { sensitive: true })
         Log.warn("Export warn", "Test export")
         Log.error("Export error", "Test export")
         const jsonInfo = Log.exportToJson("INFO")

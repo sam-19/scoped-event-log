@@ -4,7 +4,7 @@ import {
     type LogEventListener,
     type LogEventProps,
     type LogEventTimestamp,
-} from './Log'
+} from './Log.js'
 
 export {
     Log,
