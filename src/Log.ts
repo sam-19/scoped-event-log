@@ -12,8 +12,16 @@
  * @property sensitive - Is this event sensitive and should be removed from logs or UI?
  */
 export type LogEventContext = {
-    /** Should this event be announced to the user (e.g. via a toast notification)? */
-    announce?: boolean
+    /**
+     * Should this event be announced to the user (e.g. via a toast notification)?
+     *
+     * - `true` — announce using the log message verbatim.
+     * - `string` — announce using this custom message instead of the log message;
+     *   useful when the log line should stay technical while the user sees
+     *   plain prose.
+     * - `false` / omitted — do not announce.
+     */
+    announce?: boolean | string
     /** Any extra properties that don't fit into the predefined context. */
     extra?: unknown
     /** Is this event sensitive and should be removed from logs or UI? */
@@ -415,52 +423,67 @@ export class Log {
                     ? logEvent.message.join('\n')
                     : logEvent.message.toString()
         )
-        if (logEvent.level === Log.LEVELS.DEBUG) {
-            message.unshift('DEBUG')
-            const finalMessage = [message.join(' ')]
-            if (logEvent.extra) {
-                if (Array.isArray(logEvent.extra)) {
-                    finalMessage.push(...logEvent.extra)
-                } else {
-                    finalMessage.push(logEvent.extra.toString())
-                }
-            }
-            console.debug(finalMessage.join('\n'))
-        } else if (logEvent.level === Log.LEVELS.INFO) {
-            // Keep the first part of the message always the same length
-            message.unshift('INFO ')
-            const finalMessage = [message.join(' ')]
-            if (logEvent.extra) {
-                if (Array.isArray(logEvent.extra)) {
-                    finalMessage.push(...logEvent.extra)
-                } else {
-                    finalMessage.push(logEvent.extra.toString())
-                }
-            }
-            console.info(finalMessage.join('\n'))
-        } else if (logEvent.level === Log.LEVELS.WARN) {
-            message.unshift('WARN ')
-            const finalMessage = [message.join(' ')]
-            if (logEvent.extra) {
-                if (Array.isArray(logEvent.extra)) {
-                    finalMessage.push(...logEvent.extra)
-                } else {
-                    finalMessage.push(logEvent.extra.toString())
-                }
-            }
-            console.warn(finalMessage.join('\n'))
-        } else if (logEvent.level === Log.LEVELS.ERROR) {
-            message.unshift('ERROR')
-            const finalMessage = [message.join(' ')]
-            if (logEvent.extra) {
-                if (Array.isArray(logEvent.extra)) {
-                    finalMessage.push(...logEvent.extra)
-                } else {
-                    finalMessage.push(logEvent.extra.toString())
-                }
-            }
-            console.error(finalMessage.join('\n'))
+        const prefix = logEvent.level === Log.LEVELS.DEBUG ? 'DEBUG'
+            : logEvent.level === Log.LEVELS.INFO ? 'INFO '   // padded for alignment
+            : logEvent.level === Log.LEVELS.WARN ? 'WARN '
+            : logEvent.level === Log.LEVELS.ERROR ? 'ERROR'
+            : null
+        if (prefix === null) {
+            return
         }
+        message.unshift(prefix)
+        const lines = [message.join(' '), ...Log.formatExtra(logEvent.extra)]
+        const fn = logEvent.level === Log.LEVELS.DEBUG ? console.debug
+            : logEvent.level === Log.LEVELS.INFO  ? console.info
+            : logEvent.level === Log.LEVELS.WARN  ? console.warn
+            : console.error
+        fn(lines.join('\n'))
+    }
+
+    /**
+     * Format the `extra` payload attached to a `LogEvent` into printable lines.
+     *
+     * Three shapes are handled:
+     *  - Array — each element is one line (legacy free-form attachment).
+     *  - Error-style object `{ error, stack }` set by {@link Log.error} — the error's own
+     *    `toString()` plus the captured stack frames (one per line). Without this special
+     *    case, an object like `{ error: Error, stack: string[] }` falls through to
+     *    `extra.toString()` which produces `"[object Object]"`.
+     *  - Anything else — stringified via `String(...)` to avoid `[object Object]`.
+     */
+    private static formatExtra (extra: LogEventContext['extra']): string[] {
+        if (!extra) {
+            return []
+        }
+        if (Array.isArray(extra)) {
+            return extra.map(line => String(line))
+        }
+        if (typeof extra === 'object') {
+            const lines: string[] = []
+            const errLike = extra as { error?: unknown, stack?: unknown }
+            if (errLike.error !== undefined && errLike.error !== null) {
+                // Native Error: `String(err)` yields e.g. "DataCloneError: …"
+                // Plain object cloned from a worker: still prints its message via String().
+                lines.push(String(errLike.error))
+            }
+            if (Array.isArray(errLike.stack)) {
+                for (const frame of errLike.stack) {
+                    lines.push(String(frame))
+                }
+            } else if (typeof errLike.stack === 'string') {
+                lines.push(errLike.stack)
+            }
+            if (lines.length === 0) {
+                // Unknown object shape — fall back to a JSON dump rather than [object Object].
+                try {
+                    lines.push(JSON.stringify(extra))
+                } catch {
+                    lines.push(String(extra))
+                }
+            }
+            return lines
+        }
+        return [String(extra)]
     }
 
     /**
@@ -745,8 +768,16 @@ class LogEvent {
     }
 
     // Properties are immutable after initiation
-    /** Should this event be announced to the user (e.g. via a toast notification)? */
-    get announce () {
+    /**
+     * Should this event be announced to the user (e.g. via a toast notification)?
+     *
+     * Returns `true` or a string (the custom announcement message) when the
+     * event should be announced; `false` otherwise. Consumers that just want
+     * a "should I announce?" boolean can use the truthy check `if (announce)`;
+     * consumers that want the actual text to show should fall back to
+     * `event.message` when `announce === true`.
+     */
+    get announce (): boolean | string {
         // For backwards compatibility, we also allow announcement to be accessed directly from the event object.
         return this.#context.announce || false
     }
