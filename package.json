@@ -6,6 +6,28 @@
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./Log": {
+      "types": "./dist/Log.d.ts",
+      "default": "./dist/Log.js"
+    },
+    "./LogInspector": {
+      "types": "./dist/LogInspector.d.ts",
+      "default": "./dist/LogInspector.js"
+    },
+    "./dist/Log": {
+      "types": "./dist/Log.d.ts",
+      "default": "./dist/Log.js"
+    },
+    "./dist/LogInspector": {
+      "types": "./dist/LogInspector.d.ts",
+      "default": "./dist/LogInspector.js"
+    }
+  },
   "files": [
     "dist/*",
     "umd/*",

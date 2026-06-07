@@ -5,7 +5,6 @@
  * @license    MIT
  */
 
-import {describe, expect, test} from '@jest/globals'
 import { Log } from '../src/Log'
 
 // Avoid messages in the console during test
