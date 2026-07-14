@@ -13,7 +13,9 @@
     // imports (`./Log` instead of `./Log.js`) while still emitting valid ESM.
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "types": ["node"],
+    // No ambient @types packages: this library uses none, and auto-inclusion would
+    // pull in broken hoisted type libs (e.g. minimatch).
+    "types": [],
 
     // ── Emit ──────────────────────────────────────────────────────────────
     "declaration": true,
