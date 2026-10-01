@@ -13,7 +13,7 @@ import '@awesome.me/webawesome/dist/components/option/option.js'
 import '@awesome.me/webawesome/dist/components/scroller/scroller.js'
 import '@awesome.me/webawesome/dist/components/select/select.js'
 import '@awesome.me/webawesome/dist/components/tooltip/tooltip.js'
-import { Log, type LogEventProps } from './index.js'
+import { Log, type LogEventProps, type LogLevel } from './index.js'
 
 type LogEvent = LogEventProps & {
   id: string
@@ -68,46 +68,63 @@ export class LogInspector extends LitElement {
   #logEvents: LogEvent[] = []
   /** List of source for which log events are available. */
   #logSources: string[] = []
+  /** Levels the log listener is registered for, held so the same levels can be used to remove it. */
+  #listenedLevels: LogLevel[] = []
+  /** Log listener, held as one reference so it can be removed again. */
+  #logListener = () => {
+    this.refreshEvents()
+  }
+  /** Colour-scheme query, held so its listener can be removed again. */
+  #schemeQuery: MediaQueryList | null = null
+  /** Colour-scheme listener, held as one reference so it can be removed again. */
+  #schemeListener = (event: MediaQueryListEvent) => {
+    if (this.mode === 'system') {
+      this._applyMode(event.matches ? 'dark' : 'light')
+    }
+  }
   /** Current theme. */
   #theme: 'dark' | 'light' = 'light'
+
   /**
-   * Crate a new log inspector element.
-   * This will automatically add event listeners to the log instance.
-   * @param log The log instance to use.
-   * @param developmentMode Is the app in development mode?
-   * @param eventsPerPage The number of events to show per page.
-   * @param displayPriorities The priority levels to filter.
-   * @param displaySources The sources to filter.
-   * @param pageNumber The current page number.
+   * Apply the theme and subscribe to the log.
+   *
+   * Both belong here rather than in the constructor. The theme sets a class on the host, and a
+   * custom element constructor may not touch its own attributes: `document.createElement` refuses an
+   * element that comes back carrying any, with `NotSupportedError`. A host whose colour scheme is
+   * dark took that path and could not create the element at all, while a light one happened to
+   * survive, because removing a class from an element that has none writes no attribute.
+   *
+   * Connection is also the first point at which the attributes are readable, so the log levels can
+   * be decided here instead of after a frame.
    */
-  constructor () {
-    super()
-    const eventLevels = ['ERROR', 'INFO', 'WARN'] as ("DEBUG" | "ERROR" | "INFO" | "WARN")[]
-    // Apply theme and monitor for mode changes.
-    if (this.mode === 'light') {
-        this.classList.remove('wa-dark')
-        this.#theme = 'light'
-    } else if (this.mode === 'dark') {
-        this.classList.add('wa-dark')
-        this.#theme = 'dark'
-    } else {
-      this._applyMode(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
-        if (this.mode === 'system') {
-          this._applyMode(event.matches ? 'dark' : 'light')
-        }
-      })
+  connectedCallback () {
+    super.connectedCallback()
+    this.#schemeQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    this.#schemeQuery.addEventListener('change', this.#schemeListener)
+    this._applyConfiguredMode()
+    this.#listenedLevels = this.developmentMode
+                           ? ['DEBUG', 'ERROR', 'INFO', 'WARN']
+                           : ['ERROR', 'INFO', 'WARN']
+    this.useLog.addEventListener(this.#listenedLevels, this.#logListener)
+    this.refreshEvents()
+  }
+
+  /** Release both subscriptions, which would otherwise outlive the element and keep it reachable. */
+  disconnectedCallback () {
+    super.disconnectedCallback()
+    this.#schemeQuery?.removeEventListener('change', this.#schemeListener)
+    this.#schemeQuery = null
+    if (this.#listenedLevels.length) {
+      this.useLog.removeEventListeners(this.#listenedLevels, this.#logListener)
+      this.#listenedLevels = []
     }
-    requestAnimationFrame(() => {
-      // Attributes need time to be initialized.
-      if (this.developmentMode) {
-        eventLevels.push('DEBUG')
-      }
-      this.useLog.addEventListener(eventLevels, _event => {
-        this.refreshEvents()
-      })
-      this.refreshEvents()
-    })
+  }
+
+  /** Re-apply the theme when the mode is changed after the element is in the document. */
+  updated (changed: Map<string, unknown>) {
+    if (changed.has('mode')) {
+      this._applyConfiguredMode()
+    }
   }
   /**
    * The log events to display.
@@ -328,6 +345,15 @@ export class LogInspector extends LitElement {
         </wa-scroller>
       </div>
     `
+  }
+
+  /** Apply whichever theme the `mode` setting currently resolves to. */
+  private _applyConfiguredMode () {
+    if (this.mode === 'system') {
+      this._applyMode(this.#schemeQuery?.matches ? 'dark' : 'light')
+    } else {
+      this._applyMode(this.mode)
+    }
   }
 
   /**
