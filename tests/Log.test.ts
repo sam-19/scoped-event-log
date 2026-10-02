@@ -5,6 +5,7 @@
  * @license    MIT
  */
 
+import { describe, expect, test, vi } from 'vitest'
 import { Log } from '../src/Log'
 
 // Avoid messages in the console during test
@@ -13,10 +14,10 @@ console['error'] = () => {}
 console['info'] = () => {}
 console['warn'] = () => {}
 /** Console warn listener mock. */
-const debug = jest.spyOn(console, 'debug')
-const error = jest.spyOn(console, 'error')
-const info = jest.spyOn(console, 'info')
-const warn = jest.spyOn(console, 'warn')
+const debug = vi.spyOn(console, 'debug')
+const error = vi.spyOn(console, 'error')
+const info = vi.spyOn(console, 'info')
+const warn = vi.spyOn(console, 'warn')
 
 describe('Log setup', () => {
     test('Log exists in global scope', () => {

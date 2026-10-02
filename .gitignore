@@ -23,3 +23,6 @@ umd
 *.njsproj
 *.sln
 *.sw?
+
+# Test coverage reports
+tests/coverage
