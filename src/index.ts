@@ -1,5 +1,13 @@
+/**
+ * Scoped event log.
+ * @package    scoped-event-log
+ * @copyright  2024 Sampsa Lohi
+ * @license    MIT
+ */
+
 import {
     Log,
+    type LogEventContext,
     type LogLevel,
     type LogEventListener,
     type LogEventProps,
@@ -8,6 +16,7 @@ import {
 
 export {
     Log,
+    type LogEventContext,
     type LogLevel,
     type LogEventListener,
     type LogEventProps,

@@ -33,14 +33,13 @@ Suggested classification scheme:
 
 Each of these levels have their own shorthand, namely `Log.debug()`, `Log.info()`, `Log.warn()`, and `Log.error()`. The three former accept as arguments a `message` and `scope` (both strings). The error shorthand also accepts a third argument for the actual `Error` that was thrown.
 
-The base `Log.add()` method accepts an optional fourth argument `extra` that can hold anything related to the event.
+Every method takes a final optional `context` argument of type `LogEventContext`. It carries `announce` (ask the host application to show the message to the user, either verbatim or as a replacement string), `sensitive` (redact the message wherever the event is read back) and `extra` (anything else related to the event). `Log.error()` attaches the error and its stack frames under `extra`, keeping whatever the caller passed under `extra.caller`.
 
 ### Handling events from web workers
 
-Since the worker opertes in a different scope than the main document, the `Log` objects imported in workers are
-separate objects. Since we don't want to maintain multiple instances of the object, all with their individual event
-buffers, we can register a `worker` to automatically relay all events from its `Log` to the `Log` where it's
-registered (i.e. the main document).
+Since the worker operates in a different scope than the main document, the `Log` objects imported in workers are separate objects. Since we don't want to maintain multiple instances of the object, all with their individual event buffers, we can register a `worker` to automatically relay all events from its `Log` to the `Log` where it's registered (i.e. the main document).
+
+A relayed event keeps its context, so an event a worker marked `sensitive` stays redacted on the main thread and an error logged in a worker arrives with its stack. Events below the worker forward threshold are dropped in the worker rather than serialised across threads; `Log.setWorkerForwardThreshold()` sets it, independently of the print threshold.
 
 ```javascript
 import { Log } from 'scoped-event-log'

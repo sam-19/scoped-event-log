@@ -1,3 +1,10 @@
+/**
+ * Log inspector: a Lit element that presents the events held by {@link Log}.
+ * @package    scoped-event-log
+ * @copyright  2024 Sampsa Lohi
+ * @license    MIT
+ */
+
 import { LitElement, css, html, nothing } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import { repeat } from 'lit/directives/repeat.js'
@@ -5,7 +12,7 @@ import { repeat } from 'lit/directives/repeat.js'
 // WebAwesome imports
 import '@awesome.me/webawesome/dist/styles/themes/default.css'
 
-// Shoelace components
+// WebAwesome components
 import '@awesome.me/webawesome/dist/components/button/button.js'
 import '@awesome.me/webawesome/dist/components/details/details.js'
 import '@awesome.me/webawesome/dist/components/divider/divider.js'
@@ -331,9 +338,9 @@ export class LogInspector extends LitElement {
                       : ''
                     }
                     ${ event.expanded && event.extra
-                      ? repeat(Array.isArray(event.extra) ? event.extra : [event.extra],
-                        (_extra) => `log-event-${event.id}-extra`, (extra, _idy) => {
-                          return html`<pre>${extra}</pre>`
+                      ? repeat(Log.formatExtra(event.extra),
+                        (_line, idy) => `log-event-${event.id}-extra-${idy}`, (line) => {
+                          return html`<pre>${line}</pre>`
                       })
                       : ''
                     }

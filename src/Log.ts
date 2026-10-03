@@ -7,9 +7,6 @@
 
 /**
  * Additional context for a log event.
- * @property announce - Should this event be announced to the user (e.g. via a toast notification)?
- * @property extra - Any extra properties that don't fit into the predefined context.
- * @property sensitive - Is this event sensitive and should be removed from logs or UI?
  */
 export type LogEventContext = {
     /**
@@ -37,12 +34,6 @@ export type LogEventListener = (level?: LogLevel, event?: LogEvent) => unknown
 
 /**
  * Properties of a log event.
- * @property extra - Any extra properties.
- * @property level - Event priority level.
- * @property message - Message lines as a string or an array of strings.
- * @property printed - Has this event's message already been printed to console.
- * @property scope - Scope of the event.
- * @property time - Timestamp of logging the event.
  */
 export type LogEventProps = {
     /** Any extra properties. */
@@ -61,8 +52,6 @@ export type LogEventProps = {
 
 /**
  * Timestamp of a log event.
- * @property date - Date object of the event.
- * @property delta - Time elapsed since the previous log event (in milliseconds).
  */
 export type LogEventTimestamp = {
     /** Date object of the event. */
@@ -83,11 +72,13 @@ export type LogLevel = keyof typeof Log.LEVELS
  *
  * Suggested classification scheme:
  * - `DEBUG`: Lowest level events meant to track the normal operation of the application.
- * - `INFO`: Used to notify that an important operation has completed, for example a module or resource finishes loading.
- * - `WARN`: Used when an expected issue prevents the application from fully performing, but not altogether stopping, an operation.
+ * - `INFO`: Used to notify that an important operation has completed, for example a module or
+ *   resource finishes loading.
+ * - `WARN`: Used when an expected issue prevents the application from fully performing, but not
+ *   altogether stopping, an operation.
  * - `ERROR`: Used when an (usually) unexpected issue prevents the application from continuing an operation.
  *
- * Since the worker opertes in a different scope than the main document, the `Log` objects imported in workers are
+ * Since the worker operates in a different scope than the main document, the `Log` objects imported in workers are
  * separate objects. Since we don't want to maintain multiple instances of the object, all with their individual event
  * buffers, we can register a `worker` to automatically relay all events from its `Log` to the `Log` where it's
  * registered (i.e. the main document).
@@ -101,6 +92,12 @@ export type LogLevel = keyof typeof Log.LEVELS
  */
 export class Log {
     // Static properties
+    /**
+     * How far {@link Log.formatExtra} follows a payload into itself. The payload is caller-supplied
+     * and its `caller` key may point back at an ancestor, which an unbounded walk would follow until
+     * the stack runs out -- in the logger, where the application has already gone wrong.
+     */
+    static readonly MAX_EXTRA_DEPTH = 8
     /** Log event priority levels (in ascending order). */
     static readonly LEVELS = {
         DEBUG: 0,
@@ -163,7 +160,7 @@ export class Log {
      * @param level - Event priority as key of Log.LEVELS.
      * @param message - Message as a string or array of strings (where each item is its own line).
      * @param scope - Scope of the event.
-     * @param sensitive - Whether the event contains sensitive information (default false).
+     * @param context - Additional context for the event.
      */
     static add (
         level: keyof typeof Log.LEVELS,
@@ -182,11 +179,13 @@ export class Log {
             // the parent has no interest in the event. On hot paths (signal caching, montage
             // builds) workers log hundreds of debug messages per second, which floods the
             // parent's task queue with HandlePostMessage work.
-            if (
-                !Object.keys(Log.LEVELS).includes(level) ||
-                level === 'DISABLE' ||
-                Log.LEVELS[level] < Log.workerForwardThreshold
-            ) {
+            // An unusable level is reported before the threshold is consulted, so the same
+            // programming error is named here and on the main thread rather than only there.
+            if (!Object.keys(Log.LEVELS).includes(level) || level === 'DISABLE') {
+                console.warn(`Rejected an event with an invalid log level: (${level}) ${message}`)
+                return
+            }
+            if (Log.LEVELS[level] < Log.workerForwardThreshold) {
                 return
             }
             postMessage({
@@ -275,21 +274,16 @@ export class Log {
     static clear () {
         Log.events.splice(0)
         // Send "clear" events to notify listeners that the log is empty.
-        const debugEvent = new LogEvent(0, '__clear', 'Log')
-        Log.callEventListeners("DEBUG", debugEvent)
-        const infoEvent = new LogEvent(1, '__clear', 'Log')
-        Log.callEventListeners("INFO", infoEvent)
-        const warnEvent = new LogEvent(2, '__clear', 'Log')
-        Log.callEventListeners("WARN", warnEvent)
-        const errorEvent = new LogEvent(3, '__clear', 'Log')
-        Log.callEventListeners("ERROR", errorEvent)
+        for (const level of ['DEBUG', 'INFO', 'WARN', 'ERROR'] as LogLevel[]) {
+            Log.callEventListeners(level, new LogEvent(Log.LEVELS[level], '__clear', 'Log'))
+        }
     }
 
     /**
      * Add a message at debug level to the log.
      * @param message - Message as a string or array of strings (where each item is its own line).
      * @param scope - Scope of the event.
-     * @param sensitive - Whether the event contains sensitive information (default false).
+     * @param context - Additional context for the event.
      */
     static debug (message: string | string[], scope: string, context: LogEventContext = {}) {
         Log.add("DEBUG", message, scope, context)
@@ -309,8 +303,13 @@ export class Log {
         error = error || new Error(Array.isArray(message) ? message.join() : message)
         let stack = (error.stack || '').split(/\r?\n/g)
         stack = stack.length > 1 ? stack.slice(1) : stack
-        Object.assign(context, { extra: { error, stack } })
-        Log.add("ERROR", message, scope, context)
+        // A copy, because assigning onto the argument edits an object the caller still holds and may
+        // reuse across calls. `caller` keeps whatever the caller attached under its own key, so the
+        // captured error is added to the context rather than taking the place of its contents.
+        Log.add("ERROR", message, scope, {
+            ...context,
+            extra: { error, stack, caller: context.extra },
+        })
     }
 
     /**
@@ -438,6 +437,7 @@ export class Log {
             : logEvent.level === Log.LEVELS.WARN  ? console.warn
             : console.error
         fn(lines.join('\n'))
+        logEvent.markPrinted()
     }
 
     /**
@@ -445,13 +445,19 @@ export class Log {
      *
      * Three shapes are handled:
      *  - Array — each element is one line (legacy free-form attachment).
-     *  - Error-style object `{ error, stack }` set by {@link Log.error} — the error's own
-     *    `toString()` plus the captured stack frames (one per line). Without this special
-     *    case, an object like `{ error: Error, stack: string[] }` falls through to
-     *    `extra.toString()` which produces `"[object Object]"`.
+     *  - Error-style object `{ error, stack, caller }` set by {@link Log.error} — the error's own
+     *    `toString()`, the captured stack frames (one per line), then whatever the caller
+     *    attached alongside it. Without this special case, an object like `{ error: Error, stack: string[] }`
+     *    falls through to `extra.toString()` which produces `"[object Object]"`.
      *  - Anything else — stringified via `String(...)` to avoid `[object Object]`.
+     *
+     * Public because every surface that shows an event's `extra` needs the same answer: a consumer
+     * that renders the payload directly prints `[object Object]` for the error shape, which is the
+     * shape `Log.error` always produces.
+     * @param extra - The payload to format.
+     * @param depth - Current nesting depth, counted so that a payload holding a reference back to itself is dumped rather than followed until the stack runs out.
      */
-    private static formatExtra (extra: LogEventContext['extra']): string[] {
+    static formatExtra (extra: LogEventContext['extra'], depth = 0): string[] {
         if (!extra) {
             return []
         }
@@ -459,8 +465,11 @@ export class Log {
             return extra.map(line => String(line))
         }
         if (typeof extra === 'object') {
+            if (depth >= Log.MAX_EXTRA_DEPTH) {
+                return [String(extra)]
+            }
             const lines: string[] = []
-            const errLike = extra as { error?: unknown, stack?: unknown }
+            const errLike = extra as { caller?: unknown, error?: unknown, stack?: unknown }
             if (errLike.error !== undefined && errLike.error !== null) {
                 // Native Error: `String(err)` yields e.g. "DataCloneError: …"
                 // Plain object cloned from a worker: still prints its message via String().
@@ -472,6 +481,12 @@ export class Log {
                 }
             } else if (typeof errLike.stack === 'string') {
                 lines.push(errLike.stack)
+            }
+            if (errLike.caller !== undefined && errLike.caller !== null) {
+                // Whatever the caller attached alongside the error, which `Log.error` keeps under
+                // its own key rather than in place of the error. Formatted through the same path, so
+                // a caller payload of any shape prints as its own lines.
+                lines.push(...Log.formatExtra(errLike.caller, depth + 1))
             }
             if (lines.length === 0) {
                 // Unknown object shape — fall back to a JSON dump rather than [object Object].
@@ -504,7 +519,13 @@ export class Log {
         const messageHandler = (message: MessageEvent) => {
             const { data } = message
             if (data.action === 'log' && data.level && data.message && data.scope) {
-                Log.add(data.level, data.message, data.scope, data.extra)
+                // The worker posts the whole context under `context`; there is no `extra` key on the
+                // message. Reading one drops every field the context carries: `announce`, `extra`
+                // (the error and stack a worker-side `Log.error` captures) and, most
+                // consequentially, `sensitive` -- which is what makes `LogEvent.message` redact
+                // itself, so a message the worker withholds from its own console would print in
+                // full on this side.
+                Log.add(data.level, data.message, data.scope, data.context)
             } else if (data.action === 'terminate') {
                 // Removing the listener from a terminated worker may not be necessary, but at least this gives a way
                 // to do that.
@@ -640,7 +661,7 @@ export class Log {
     static removeScopeEventsAtLevel (scope: string, level: LogLevel) {
         if (!Object.keys(Log.LEVELS).includes(level) || level === 'DISABLE') {
             // Not a valid logging level
-            console.warn(`Cannot remove scope ${scope} events below an invalid log level (${level}).`)
+            console.warn(`Cannot remove scope ${scope} events at an invalid log level (${level}).`)
             return
         }
         for (let i=0; i<Log.events.length; i++) {
@@ -815,6 +836,11 @@ class LogEvent {
     get time () {
         return this.#time
     }
+
+    /** Record that this event's message has reached the console. */
+    markPrinted () {
+        this.#printed = true
+    }
 }
 
 /**
@@ -839,26 +865,26 @@ class LogTimestamp {
         return this.#delta
     }
     /**
-     * Get a standard length datetime string from this timestamp
-     * @param utc return as UTC time (default false)
-     * @return YYYY-MM-DD hh:mm:ss
+     * Get a standard length datetime string from this timestamp.
+     * @param utc - Return as UTC time rather than local time (default false).
+     * @returns Timestamp as `YYYY-MM-DD hh:mm:ss`.
      */
     toString (utc=false) {
         let Y, M, D, h, m, s
         if (utc) {
-            Y = this.date.getFullYear()
-            M = (this.date.getMonth() + 1).toString().padStart(2, '0')
-            D = this.date.getDate().toString().padStart(2, '0')
-            h = this.date.getHours().toString().padStart(2, '0')
-            m = this.date.getMinutes().toString().padStart(2, '0')
-            s = this.date.getSeconds().toString().padStart(2, '0')
-        } else {
             Y = this.date.getUTCFullYear()
             M = (this.date.getUTCMonth() + 1).toString().padStart(2, '0')
             D = this.date.getUTCDate().toString().padStart(2, '0')
             h = this.date.getUTCHours().toString().padStart(2, '0')
             m = this.date.getUTCMinutes().toString().padStart(2, '0')
             s = this.date.getUTCSeconds().toString().padStart(2, '0')
+        } else {
+            Y = this.date.getFullYear()
+            M = (this.date.getMonth() + 1).toString().padStart(2, '0')
+            D = this.date.getDate().toString().padStart(2, '0')
+            h = this.date.getHours().toString().padStart(2, '0')
+            m = this.date.getMinutes().toString().padStart(2, '0')
+            s = this.date.getSeconds().toString().padStart(2, '0')
         }
         return `${Y}-${M}-${D} ${h}:${m}:${s}`
     }
